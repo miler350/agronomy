@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  planting_event: one
+  growth_stage: one
+  observed_on: 2026-05-18
+  observed_gdd: 9.99
+  notes: MyText
+
+two:
+  planting_event: two
+  growth_stage: two
+  observed_on: 2026-05-18
+  observed_gdd: 9.99
+  notes: MyText
