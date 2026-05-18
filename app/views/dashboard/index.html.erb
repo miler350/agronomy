@@ -220,6 +220,7 @@
                                 <th class="pb-3 font-medium">Next Stage</th>
                                 <th class="pb-3 font-medium">GDD to Next</th>
                                 <th class="pb-3 font-medium">Predicted Date</th>
+                                <th class="pb-3 font-medium">Status</th>
                                 <th class="pb-3 font-medium pr-4 text-right"></th>
                             </tr>
                         </thead>
@@ -263,6 +264,12 @@
                                     <td class="py-4 text-sm text-brand-dark"><%= next_short || "—" %></td>
                                     <td class="py-4 text-sm text-brand-muted"><%= result.gdd_to_next %></td>
                                     <td class="py-4 text-sm text-brand-dark"><%= result.predicted_next_date&.strftime("%b %-d") || "—" %></td>
+                                    <td class="py-4">
+                                        <% status_styles = { on_track: "bg-green-50 text-green-700 border-green-200", ahead: "bg-blue-50 text-blue-700 border-blue-200", delayed: "bg-orange-50 text-orange-700 border-orange-200" } %>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border <%= status_styles[result.status] %>">
+                                            <%= result.status.to_s.tr("_", " ").capitalize %>
+                                        </span>
+                                    </td>
                                     <td class="py-4 pr-4 text-right">
                                         <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap border border-green-200">
                                             + Observation
