@@ -33,7 +33,8 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
-# Internal proposal notes and client reference files
+# Internal proposal notes, transcripts, and client reference files
 /proposal.md
 /GDDCalculator.xlsx
+/transcript_*.md
 

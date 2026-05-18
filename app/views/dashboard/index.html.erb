@@ -1,158 +1,321 @@
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest' };</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Field GDD Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            dark: '#1F2937', brown: '#4A3B32', yellow: '#FFDA77',
+                            light: '#FFFBEB', green: '#34D399', gray: '#F3F4F6',
+                            text: '#374151', muted: '#6B7280'
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0,0,0,0.05)',
+                        'card': '0 10px 30px -5px rgba(0,0,0,0.08)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin:0; padding:0; background-color:#F9FAFB; color:#374151; font-family:'Inter',sans-serif; }
+        ::-webkit-scrollbar { width:6px; height:6px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:#D1D5DB; border-radius:10px; }
+        ::-webkit-scrollbar-thumb:hover { background:#9CA3AF; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #f5f5f0;
-    color: #1a1a1a;
-  }
+        .glass-panel {
+            background:rgba(255,255,255,0.85);
+            backdrop-filter:blur(12px);
+            -webkit-backdrop-filter:blur(12px);
+            border:1px solid rgba(255,255,255,0.5);
+        }
+        .progress-gradient { background:linear-gradient(90deg,#FFDA77 0%,#FCD34D 100%); }
 
-  header {
-    background: #1a3a1a;
-    color: white;
-    padding: 16px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+        /* Sidebar collapse */
+        #sidebar { transition: width 0.25s ease; width: 280px; }
+        #sidebar.collapsed { width: 72px; }
+        #sidebar.collapsed .nav-label,
+        #sidebar.collapsed .brand-name,
+        #sidebar.collapsed .user-info { display: none; }
+        #sidebar.collapsed .nav-link { justify-content: center; padding-left: 0; padding-right: 0; }
+        #sidebar.collapsed .brand-area { justify-content: center; }
+        #sidebar.collapsed .user-area { justify-content: center; padding-left: 0; padding-right: 0; }
+    </style>
+</head>
+<body class="m-0 p-0 overflow-x-hidden min-h-screen flex flex-col lg:flex-row">
 
-  header h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
-  header .meta { font-size: 12px; color: #8fbc8f; }
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen sticky top-0 z-40 shadow-soft overflow-hidden">
 
-  .container { padding: 24px 32px; }
-
-  .summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-
-  .stat {
-    background: white;
-    border-radius: 8px;
-    padding: 16px 24px;
-    min-width: 140px;
-    border: 1px solid #e0e0d8;
-  }
-
-  .stat .number { font-size: 28px; font-weight: 700; color: #1a3a1a; }
-  .stat .label  { font-size: 12px; color: #666; margin-top: 2px; }
-
-  table {
-    width: 100%;
-    background: white;
-    border-radius: 8px;
-    border: 1px solid #e0e0d8;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  thead th {
-    background: #1a3a1a;
-    color: white;
-    padding: 10px 14px;
-    text-align: left;
-    font-weight: 500;
-    font-size: 12px;
-    letter-spacing: 0.3px;
-  }
-
-  thead th:first-child { border-radius: 8px 0 0 0; }
-  thead th:last-child  { border-radius: 0 8px 0 0; }
-
-  tbody tr { border-bottom: 1px solid #f0f0e8; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: #fafaf5; }
-  tbody td { padding: 10px 14px; vertical-align: middle; }
-
-  .field-name { font-weight: 600; }
-  .location   { color: #666; font-size: 12px; }
-
-  .gdd-bar-wrap { display: flex; align-items: center; gap: 8px; }
-  .gdd-bar { flex: 1; height: 6px; background: #e8e8e0; border-radius: 3px; overflow: hidden; min-width: 80px; }
-  .gdd-fill { height: 100%; border-radius: 3px; background: #4a9a4a; }
-  .gdd-val { font-weight: 600; white-space: nowrap; }
-
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-  .badge-on-track { background: #e6f4e6; color: #2d6a2d; }
-  .badge-ahead    { background: #e6f0ff; color: #2d4da0; }
-  .badge-delayed  { background: #fff0e6; color: #a06020; }
-
-  .no-next { color: #aaa; font-style: italic; }
-</style>
-
-<header>
-  <h1>GDD Field Dashboard</h1>
-  <div class="meta">
-    Last synced: <%= @last_synced&.in_time_zone("Eastern Time (US & Canada)")&.strftime("%b %-d, %Y %-I:%M %p ET") || "—" %>
-  </div>
-</header>
-
-<div class="container">
-
-  <% total      = @rows.size %>
-  <% avg_gdd    = (@rows.sum { |r| r[:result].calibrated_gdd } / [total, 1].max).round %>
-  <% at_v3_plus = @rows.count { |r| r[:result].current_stage&.position.to_i >= 3 } %>
-  <% on_track   = @rows.count { |r| r[:result].status == :on_track } %>
-
-  <div class="summary">
-    <div class="stat">
-      <div class="number"><%= total %></div>
-      <div class="label">Total Fields</div>
-    </div>
-    <div class="stat">
-      <div class="number"><%= avg_gdd %></div>
-      <div class="label">Avg GDD</div>
-    </div>
-    <div class="stat">
-      <div class="number"><%= at_v3_plus %></div>
-      <div class="label">Fields at V3+</div>
-    </div>
-    <div class="stat">
-      <div class="number"><%= on_track %></div>
-      <div class="label">On Track</div>
-    </div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Field</th>
-        <th>Planted</th>
-        <th>Accumulated GDD</th>
-        <th>Current Stage</th>
-        <th>Next Stage</th>
-        <th>GDD to Next</th>
-        <th>Predicted Date</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @rows.each do |row| %>
-        <% pe     = row[:planting_event] %>
-        <% result = row[:result] %>
-        <% pct    = [[result.calibrated_gdd / 2650.0 * 100, 0].max, 100].min.round %>
-        <tr>
-          <td>
-            <div class="field-name"><%= pe.field.name %></div>
-            <div class="location"><%= pe.field.location.name %></div>
-          </td>
-          <td><%= pe.planted_on.strftime("%b %-d") %></td>
-          <td>
-            <div class="gdd-bar-wrap">
-              <div class="gdd-bar">
-                <div class="gdd-fill" style="width: <%= pct %>%"></div>
-              </div>
-              <span class="gdd-val"><%= result.calibrated_gdd %></span>
+        <div class="brand-area p-5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-[#FFDA77] flex items-center justify-center text-brand-brown font-bold flex-shrink-0">
+                <i class="fa-solid fa-leaf text-sm"></i>
             </div>
-          </td>
-          <td><%= result.current_stage&.name || "—" %></td>
-          <td><%= result.next_stage&.name || '<span class="no-next">Complete</span>'.html_safe %></td>
-          <td><%= result.next_stage ? result.gdd_to_next : "—" %></td>
-          <td><%= result.predicted_next_date&.strftime("%b %-d") || "—" %></td>
-          <td>
-            <% badge = { on_track: "badge-on-track", ahead: "badge-ahead", delayed: "badge-delayed" }[result.status] %>
-            <span class="badge <%= badge %>"><%= result.status.to_s.tr("_", " ").capitalize %></span>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+            <span class="brand-name text-xl font-bold text-brand-dark tracking-tight whitespace-nowrap">AgriDash</span>
+        </div>
 
-</div>
+        <!-- Toggle button -->
+        <button onclick="toggleSidebar()" class="mx-3 mb-2 p-2 rounded-lg text-brand-muted hover:bg-gray-50 hover:text-brand-dark flex items-center justify-center transition-colors">
+            <i id="toggle-icon" class="fa-solid fa-angles-left text-sm"></i>
+        </button>
+
+        <nav class="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+            <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] bg-[#FFFBEB] text-brand-brown font-medium transition-colors">
+                <i class="fa-solid fa-chart-pie w-5 text-center flex-shrink-0"></i>
+                <span class="nav-label whitespace-nowrap">Overview</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-muted hover:bg-gray-50 hover:text-brand-dark font-medium transition-colors">
+                <i class="fa-solid fa-seedling w-5 text-center flex-shrink-0"></i>
+                <span class="nav-label whitespace-nowrap">Fields & Crops</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-muted hover:bg-gray-50 hover:text-brand-dark font-medium transition-colors">
+                <i class="fa-solid fa-cloud-sun w-5 text-center flex-shrink-0"></i>
+                <span class="nav-label whitespace-nowrap">Weather Data</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-muted hover:bg-gray-50 hover:text-brand-dark font-medium transition-colors">
+                <i class="fa-solid fa-chart-line w-5 text-center flex-shrink-0"></i>
+                <span class="nav-label whitespace-nowrap">Analytics</span>
+            </a>
+        </nav>
+
+        <div class="p-3 border-t border-gray-100 space-y-1">
+            <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-muted hover:bg-gray-50 hover:text-brand-dark font-medium transition-colors">
+                <i class="fa-solid fa-gear w-5 text-center flex-shrink-0"></i>
+                <span class="nav-label whitespace-nowrap">Settings</span>
+            </a>
+            <div class="user-area mt-2 flex items-center gap-3 px-4 py-2">
+                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" alt="User" class="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm flex-shrink-0">
+                <div class="user-info">
+                    <p class="text-sm font-semibold text-brand-dark whitespace-nowrap">Katie</p>
+                    <p class="text-xs text-brand-muted">Pro Plan</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-[#F3F4F6] relative">
+        <div class="absolute top-0 right-0 w-[600px] h-[400px] bg-gradient-to-bl from-[#FFFBEB] to-transparent opacity-60 pointer-events-none"></div>
+
+        <!-- Header -->
+        <header class="w-full px-8 py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-10 glass-panel border-b border-white/40 sticky top-0">
+            <div>
+                <h1 class="text-2xl font-bold text-brand-brown">Farm Field Overview</h1>
+                <p class="text-sm text-brand-muted mt-1">Cumulative Growing Degree Days (GDD) · Last synced: <%= @last_synced&.in_time_zone("Eastern Time (US & Canada)")&.strftime("%b %-d, %-I:%M %p ET") %></p>
+            </div>
+            <div class="flex items-center gap-4 w-full sm:w-auto">
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="field-search" placeholder="Search fields..." class="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFDA77] focus:border-transparent text-sm">
+                </div>
+                <button class="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-brand-dark hover:bg-gray-50 flex-shrink-0">
+                    <i class="fa-regular fa-bell"></i>
+                </button>
+                <button class="px-5 py-2.5 rounded-full bg-brand-brown text-white text-sm font-medium hover:bg-[#3A2D25] transition-colors shadow-md flex-shrink-0">
+                    Export Data
+                </button>
+            </div>
+        </header>
+
+        <div class="p-8 space-y-8 overflow-y-auto z-10">
+
+            <!-- Top Widgets -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Weather Widget -->
+                <section class="col-span-1 lg:col-span-2 bg-white rounded-[24px] p-6 shadow-card border border-gray-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold text-brand-dark">Charlottesville Weather Forecast</h2>
+                        <select class="text-sm text-brand-muted border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#FFDA77] bg-white cursor-pointer">
+                            <option>Orange, VA</option>
+                            <option>Rochelle, VA</option>
+                            <option>Ruckersville, VA</option>
+                            <option selected>Madison, VA</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2 bg-[#FFFBEB]/50">
+                            <div class="w-10 h-10 rounded-full bg-[#FFDA77]/20 flex items-center justify-center text-[#F59E0B]">
+                                <i class="fa-solid fa-sun text-xl"></i>
+                            </div>
+                            <span class="text-xs text-brand-muted font-medium uppercase tracking-wider">Avg Temp</span>
+                            <span class="text-xl font-bold text-brand-dark">72°F</span>
+                        </div>
+                        <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2">
+                            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                                <i class="fa-solid fa-droplet text-xl"></i>
+                            </div>
+                            <span class="text-xs text-brand-muted font-medium uppercase tracking-wider">Precipitation</span>
+                            <span class="text-xl font-bold text-brand-dark">0.2"</span>
+                        </div>
+                        <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2">
+                            <div class="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-500">
+                                <i class="fa-solid fa-wind text-xl"></i>
+                            </div>
+                            <span class="text-xs text-brand-muted font-medium uppercase tracking-wider">Wind</span>
+                            <span class="text-xl font-bold text-brand-dark">8 mph</span>
+                        </div>
+                        <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2">
+                            <div class="w-10 h-10 rounded-full bg-[#FFF7ED] flex items-center justify-center text-[#EA580C]">
+                                <i class="fa-solid fa-fire text-xl"></i>
+                            </div>
+                            <span class="text-xs text-brand-muted font-medium uppercase tracking-wider">Daily GDD</span>
+                            <span class="text-xl font-bold text-brand-dark">+18</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- GDD Forecast -->
+                <section class="col-span-1 bg-gradient-to-br from-[#FFDA77] to-[#FCD34D] rounded-[24px] p-6 shadow-card relative overflow-hidden text-brand-brown">
+                    <div class="flex justify-between items-center mb-4 relative z-10">
+                        <h2 class="text-lg font-semibold">GDD Forecast</h2>
+                        <span class="text-xs bg-white/30 px-2 py-1 rounded-md font-medium">Next 14 Days</span>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-baseline gap-2 mb-1">
+                            <span class="text-3xl font-bold">+245</span>
+                            <span class="text-sm font-medium opacity-80">Expected GDD</span>
+                        </div>
+                        <p class="text-sm opacity-90 mb-4">Accelerated growth expected due to upcoming heat wave.</p>
+                    </div>
+                    <div id="forecast-chart" class="h-[120px] w-full relative z-10"></div>
+                </section>
+            </div>
+
+            <!-- Active Fields Progress -->
+            <section class="bg-white rounded-[24px] p-6 shadow-card border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-brand-dark">Active Fields Progress</h2>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-brand-muted hover:bg-gray-50">Filter</button>
+                        <button class="px-3 py-1.5 rounded-lg bg-[#F3F4F6] text-sm font-medium text-brand-dark">All Fields</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[900px]" id="fields-table">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-xs text-brand-muted uppercase tracking-wider">
+                                <th class="pb-3 font-medium pl-4">Field</th>
+                                <th class="pb-3 font-medium">Planted</th>
+                                <th class="pb-3 font-medium">Hybrid</th>
+                                <th class="pb-3 font-medium">Accum. GDD</th>
+                                <th class="pb-3 font-medium w-48">Stage Progress</th>
+                                <th class="pb-3 font-medium">Next Stage</th>
+                                <th class="pb-3 font-medium">GDD to Next</th>
+                                <th class="pb-3 font-medium">Predicted Date</th>
+                                <th class="pb-3 font-medium pr-4 text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <% @rows.each do |row| %>
+                                <% pe     = row[:planting_event] %>
+                                <% result = row[:result] %>
+                                <% stage_short = result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
+                                <% next_short  = result.next_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
+                                <% pct = [[result.calibrated_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
+                                <tr class="hover:bg-gray-50/50 transition-colors field-row">
+                                    <td class="py-4 pl-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-9 h-9 rounded-[10px] bg-[#FFFBEB] flex items-center justify-center text-[#F59E0B] flex-shrink-0">
+                                                <i class="fa-solid fa-wheat-awn text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-brand-dark field-name"><%= pe.field.name %></p>
+                                                <p class="text-xs text-brand-muted"><%= pe.field.location.name %></p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 text-sm text-brand-dark"><%= pe.planted_on.strftime("%b %-d") %></td>
+                                    <td class="py-4 text-sm text-brand-muted"><%= pe.product %></td>
+                                    <td class="py-4">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-brand-dark">
+                                            <%= number_with_delimiter(result.calibrated_gdd.round) %>
+                                        </span>
+                                    </td>
+                                    <td class="py-4 pr-4">
+                                        <div class="flex flex-col gap-1.5">
+                                            <div class="flex justify-between text-xs">
+                                                <span class="font-medium text-brand-dark"><%= stage_short || "—" %></span>
+                                                <span class="text-brand-muted"><%= result.gdd_to_next > 0 ? "#{result.gdd_to_next} to #{next_short}" : "" %></span>
+                                            </div>
+                                            <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                                <div class="progress-gradient h-2 rounded-full" style="width: <%= pct %>%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 text-sm text-brand-dark"><%= next_short || "—" %></td>
+                                    <td class="py-4 text-sm text-brand-muted"><%= result.gdd_to_next %></td>
+                                    <td class="py-4 text-sm text-brand-dark"><%= result.predicted_next_date&.strftime("%b %-d") || "—" %></td>
+                                    <td class="py-4 pr-4 text-right">
+                                        <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#FFFBEB] text-brand-brown hover:bg-[#FFDA77]/40 transition-colors whitespace-nowrap">
+                                            + Observation
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% end %>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        // Sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon    = document.getElementById('toggle-icon');
+            sidebar.classList.toggle('collapsed');
+            icon.className = sidebar.classList.contains('collapsed')
+                ? 'fa-solid fa-angles-right text-sm'
+                : 'fa-solid fa-angles-left text-sm';
+        }
+
+        // Field search
+        document.getElementById('field-search').addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('.field-row').forEach(row => {
+                const name = row.querySelector('.field-name').textContent.toLowerCase();
+                row.style.display = name.includes(q) ? '' : 'none';
+            });
+        });
+
+        // Forecast chart
+        window.addEventListener('load', function() {
+            const data = [{
+                x: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+                y: [12,18,22,28,35,42,48],
+                type: 'scatter', mode: 'lines', fill: 'tozeroy',
+                line: { shape: 'spline', smoothing: 1.3, color: '#ffffff', width: 2 },
+                fillcolor: 'rgba(255,255,255,0.2)', hoverinfo: 'y'
+            }];
+            const layout = {
+                margin: { t:10, r:0, b:20, l:0 },
+                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: { showgrid:false, showline:false, zeroline:false, tickfont: { color:'rgba(74,59,50,0.7)', size:10 } },
+                yaxis: { showgrid:false, showline:false, zeroline:false, showticklabels:false },
+                showlegend: false, hovermode: 'x unified'
+            };
+            Plotly.newPlot('forecast-chart', data, layout, { responsive:true, displayModeBar:false });
+        });
+    </script>
+</body>
+</html>
