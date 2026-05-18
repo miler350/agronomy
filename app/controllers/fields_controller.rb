@@ -9,6 +9,27 @@ class FieldsController < ApplicationController
   def show
     @current_planting_event = @field.planting_events.order(planted_on: :desc).first
     @gdd_result = GddCalculator.calculate(@current_planting_event) if @current_planting_event
+    @growth_stages = GrowthStage.where.not(gdd_threshold: nil).order(:position)
+    @observations = @current_planting_event&.field_observations
+      &.includes(:growth_stage)
+      &.order(observed_on: :desc) || []
+
+    if @current_planting_event
+      cumulative = 0.0
+      readings = WeatherReading
+        .where(location: @field.location)
+        .where("date >= ?", @current_planting_event.planted_on)
+        .where("date <= ?", Date.current)
+        .order(:date)
+      @gdd_chart_data = readings.map do |r|
+        tmax = [r.max_temperature.to_f, 86].min
+        tmin = [r.min_temperature.to_f, 50].max
+        cumulative += [(tmax + tmin) / 2.0 - 50, 0].max
+        { date: r.date.strftime("%b %-d"), gdd: cumulative.round(1) }
+      end
+    else
+      @gdd_chart_data = []
+    end
   end
 
   def new

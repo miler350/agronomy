@@ -1,14 +1,96 @@
 <%= content_for :head do %>
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <style>
     #field-map { position: absolute; inset: 0; border-radius: 16px; overflow: hidden; }
-    .mapboxgl-popup-content { font-family: 'Inter', sans-serif; border-radius: 10px; }
+
+    #obs-drawer {
+      position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end;
+      visibility: hidden;
+    }
+    #obs-drawer.open { visibility: visible; }
+    #obs-backdrop {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.35);
+      opacity: 0; transition: opacity 0.25s ease;
+    }
+    #obs-drawer.open #obs-backdrop { opacity: 1; }
+    #obs-panel {
+      position: relative; width: 420px; max-width: 100%; background: white;
+      height: 100%; overflow-y: auto; transform: translateX(100%);
+      transition: transform 0.25s ease; box-shadow: -4px 0 24px rgba(0,0,0,0.08);
+    }
+    #obs-drawer.open #obs-panel { transform: translateX(0); }
   </style>
 <% end %>
 
+<%# ─── Observation Drawer ──────────────────────────────────────────────── %>
+<div id="obs-drawer">
+  <div id="obs-backdrop" onclick="closeDrawer()"></div>
+  <div id="obs-panel">
+    <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-base font-bold text-[#1F2937]">Log Observation</h2>
+        <p class="text-xs text-gray-500 mt-0.5"><%= @field.name %></p>
+      </div>
+      <button onclick="closeDrawer()" class="text-gray-400 hover:text-gray-600 transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+
+    <%= form_with url: field_field_observations_path(@field), method: :post, class: "p-6 space-y-5" do |f| %>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">Date Observed</label>
+        <input type="date" name="field_observation[observed_on]"
+               value="<%= Date.current %>"
+               class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">Growth Stage Observed</label>
+        <select name="field_observation[growth_stage_id]" id="stage-select"
+                onchange="prefillGdd(this)"
+                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] bg-white">
+          <option value="">— Select stage —</option>
+          <% @growth_stages.each do |stage| %>
+            <option value="<%= stage.id %>" data-gdd="<%= stage.gdd_threshold.to_f.round %>">
+              <%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD)
+            </option>
+          <% end %>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">Observed GDD</label>
+        <input type="number" name="field_observation[observed_gdd]" id="gdd-input"
+               step="0.1" placeholder="e.g. 850"
+               class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+        <p class="text-xs text-gray-400 mt-1">Pre-filled from stage threshold — override if your field differs.</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">Notes <span class="text-gray-400 font-normal">(optional)</span></label>
+        <textarea name="field_observation[notes]" rows="3" placeholder="Field conditions, pest pressure, etc."
+                  class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] resize-none"></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+                class="flex-1 py-2.5 bg-[#166534] text-white text-sm font-semibold rounded-xl hover:bg-[#14532d] transition">
+          Save Observation
+        </button>
+        <button type="button" onclick="closeDrawer()"
+                class="px-5 py-2.5 border border-gray-200 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition">
+          Cancel
+        </button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%# ─── Main layout ────────────────────────────────────────────────────── %>
 <div class="flex flex-col h-full overflow-y-auto">
-  <!-- Header -->
+
   <header class="px-8 py-5 bg-white border-b border-gray-200 flex items-center gap-4 sticky top-0 z-10">
     <%= link_to fields_path, class: "text-gray-400 hover:text-gray-600 transition" do %>
       <i class="fa-solid fa-arrow-left"></i>
@@ -17,6 +99,10 @@
       <h1 class="text-xl font-bold text-[#1F2937]"><%= @field.name %></h1>
       <p class="text-sm text-[#6B7280] mt-0.5"><%= @field.location.name %></p>
     </div>
+    <button onclick="openDrawer()"
+            class="px-4 py-2 text-sm font-semibold bg-[#166534] text-white rounded-xl hover:bg-[#14532d] transition flex items-center gap-2">
+      <i class="fa-solid fa-plus text-xs"></i> Log Observation
+    </button>
     <%= link_to edit_field_path(@field), class: "px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition" do %>
       <i class="fa-solid fa-pencil mr-1.5"></i> Edit
     <% end %>
@@ -24,30 +110,27 @@
 
   <div class="p-8 space-y-6">
 
-    <!-- Map -->
-    <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden" style="height: 420px; position: relative;">
+    <%# Map %>
+    <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden" style="height: 360px; position: relative;">
       <div id="field-map"></div>
     </div>
 
-    <!-- Stats row -->
+    <%# GDD stat cards %>
     <% if @gdd_result %>
+    <% status_colors = { on_track: ["#dcfce7","#15803d"], ahead: ["#dbeafe","#1d4ed8"], delayed: ["#ffedd5","#c2410c"] } %>
+    <% bg, fg = status_colors[@gdd_result.status] || ["#f3f4f6","#6b7280"] %>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <% stage_short = @gdd_result.current_stage&.name %>
-      <% next_short  = @gdd_result.next_stage&.name %>
-      <% status_colors = { on_track: ["#dcfce7","#15803d"], ahead: ["#dbeafe","#1d4ed8"], delayed: ["#ffedd5","#c2410c"] } %>
-      <% bg, fg = status_colors[@gdd_result.status] || ["#f3f4f6","#6b7280"] %>
-
       <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
         <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Accum. GDD</p>
         <p class="text-2xl font-bold text-[#1F2937]"><%= number_with_delimiter(@gdd_result.calibrated_gdd.round) %></p>
       </div>
       <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
         <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Current Stage</p>
-        <p class="text-2xl font-bold text-[#1F2937]"><%= stage_short || "—" %></p>
+        <p class="text-2xl font-bold text-[#1F2937]"><%= @gdd_result.current_stage&.name || "—" %></p>
       </div>
       <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
         <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Next Stage</p>
-        <p class="text-2xl font-bold text-[#1F2937]"><%= next_short || "—" %></p>
+        <p class="text-2xl font-bold text-[#1F2937]"><%= @gdd_result.next_stage&.name || "—" %></p>
         <% if @gdd_result.gdd_to_next > 0 %>
           <p class="text-xs text-gray-400 mt-0.5"><%= @gdd_result.gdd_to_next.round %> GDD away</p>
         <% end %>
@@ -60,9 +143,9 @@
       </div>
     </div>
 
-    <!-- Planting details -->
+    <%# Planting details %>
     <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm p-6">
-      <h2 class="text-base font-semibold text-[#1F2937] mb-4">Current Planting</h2>
+      <h2 class="text-sm font-semibold text-[#1F2937] mb-3">Planting Details</h2>
       <dl class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
         <div><dt class="text-gray-500">Hybrid</dt><dd class="font-medium text-[#1F2937] mt-0.5"><%= @current_planting_event.product %></dd></div>
         <div><dt class="text-gray-500">Planted</dt><dd class="font-medium text-[#1F2937] mt-0.5"><%= @current_planting_event.planted_on.strftime("%B %-d, %Y") %></dd></div>
@@ -71,51 +154,133 @@
     </div>
     <% end %>
 
+    <%# GDD Accumulation Chart %>
+    <% if @gdd_chart_data.any? %>
+    <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm p-6">
+      <h2 class="text-sm font-semibold text-[#1F2937] mb-4">GDD Accumulation</h2>
+      <div id="gdd-chart" style="height: 220px;"></div>
+    </div>
+    <% end %>
+
+    <%# Observations %>
+    <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-[#1F2937]">Field Observations</h2>
+        <span class="text-xs text-gray-400"><%= @observations.size %> recorded</span>
+      </div>
+
+      <% if @observations.any? %>
+        <table class="w-full text-left">
+          <thead>
+            <tr class="text-xs text-[#6B7280] uppercase tracking-wider border-b border-gray-100">
+              <th class="px-6 py-3 font-medium">Date</th>
+              <th class="px-4 py-3 font-medium">Stage Observed</th>
+              <th class="px-4 py-3 font-medium">GDD at Observation</th>
+              <th class="px-4 py-3 font-medium">Notes</th>
+              <th class="px-4 py-3 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <% @observations.each do |obs| %>
+              <tr class="hover:bg-gray-50/50 transition-colors">
+                <td class="px-6 py-3 text-sm font-medium text-[#1F2937]">
+                  <%= obs.observed_on.strftime("%b %-d, %Y") %>
+                </td>
+                <td class="px-4 py-3 text-sm text-[#1F2937]">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-800">
+                    <%= obs.growth_stage.name %>
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-sm text-[#6B7280] font-mono">
+                  <%= number_with_delimiter(obs.observed_gdd.to_f.round) %>
+                </td>
+                <td class="px-4 py-3 text-sm text-[#6B7280] max-w-xs truncate">
+                  <%= obs.notes.presence || "—" %>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <%= link_to field_field_observation_path(@field, obs),
+                        data: { turbo_method: :delete, turbo_confirm: "Delete this observation?" },
+                        class: "text-xs text-red-500 hover:text-red-700 transition" do %>
+                    <i class="fa-solid fa-trash"></i>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="py-12 text-center">
+          <i class="fa-solid fa-clipboard text-2xl text-gray-200 mb-3 block"></i>
+          <p class="text-sm text-gray-400">No observations yet.</p>
+          <button onclick="openDrawer()" class="mt-3 text-sm text-[#166534] font-medium hover:underline">
+            Log the first one
+          </button>
+        </div>
+      <% end %>
+    </div>
+
   </div>
 </div>
 
 <script>
-  mapboxgl.accessToken = '<%= ENV["MAPBOX_TOKEN"] %>';
-  const fieldName = '<%= @field.name %>';
+  // ── Observation Drawer (defined first — no external deps) ───────────────
+  function openDrawer()  { document.getElementById('obs-drawer').classList.add('open'); }
+  function closeDrawer() { document.getElementById('obs-drawer').classList.remove('open'); }
+  function prefillGdd(select) {
+    const gdd = select.options[select.selectedIndex]?.dataset?.gdd;
+    if (gdd) document.getElementById('gdd-input').value = gdd;
+  }
 
-  const map = new mapboxgl.Map({
-    container: 'field-map',
-    style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: [<%= @field.longitude || -78.29 %>, <%= @field.latitude || 38.33 %>],
-    zoom: 14
-  });
-
-  map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-  map.on('load', () => {
-    fetch('/fields.geojson')
-      .then(r => r.json())
-      .then(geojson => {
-        const feature = geojson.features.find(f => f.properties.field_id === fieldName);
-        if (!feature) return;
-
-        const singleFeature = { type: 'FeatureCollection', features: [feature] };
-
-        map.addSource('field', { type: 'geojson', data: singleFeature });
-
-        map.addLayer({
-          id: 'field-fill',
-          type: 'fill',
-          source: 'field',
-          paint: { 'fill-color': '#16a34a', 'fill-opacity': 0.35 }
+  // ── Mapbox ──────────────────────────────────────────────────────────────
+  try {
+    mapboxgl.accessToken = '<%= ENV["MAPBOX_TOKEN"] %>';
+    const map = new mapboxgl.Map({
+      container: 'field-map',
+      style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      center: [<%= @field.longitude || -78.29 %>, <%= @field.latitude || 38.33 %>],
+      zoom: 14
+    });
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.on('load', () => {
+      fetch('/fields.geojson')
+        .then(r => r.json())
+        .then(geojson => {
+          const feature = geojson.features.find(f => f.properties.field_id === '<%= @field.name %>');
+          if (!feature) return;
+          const singleFeature = { type: 'FeatureCollection', features: [feature] };
+          map.addSource('field', { type: 'geojson', data: singleFeature });
+          map.addLayer({ id: 'field-fill', type: 'fill', source: 'field',
+            paint: { 'fill-color': '#16a34a', 'fill-opacity': 0.35 } });
+          map.addLayer({ id: 'field-outline', type: 'line', source: 'field',
+            paint: { 'line-color': '#15803d', 'line-width': 2 } });
+          const bounds = new mapboxgl.LngLatBounds();
+          feature.geometry.coordinates[0].forEach(c => bounds.extend(c));
+          map.fitBounds(bounds, { padding: 40, duration: 800 });
         });
+    });
+  } catch(e) { console.error('Map error:', e); }
 
-        map.addLayer({
-          id: 'field-outline',
-          type: 'line',
-          source: 'field',
-          paint: { 'line-color': '#15803d', 'line-width': 2 }
-        });
-
-        // Fit to this field's bounds
-        const bounds = new mapboxgl.LngLatBounds();
-        feature.geometry.coordinates[0].forEach(c => bounds.extend(c));
-        map.fitBounds(bounds, { padding: 40, duration: 800 });
-      });
-  });
+  // ── GDD Chart ───────────────────────────────────────────────────────────
+  <% if @gdd_chart_data.any? %>
+  try {
+    const chartData = <%= raw @gdd_chart_data.to_json %>;
+    Plotly.newPlot('gdd-chart', [{
+      x: chartData.map(d => d.date),
+      y: chartData.map(d => d.gdd),
+      type: 'scatter',
+      mode: 'lines',
+      fill: 'tozeroy',
+      line: { color: '#16a34a', width: 2 },
+      fillcolor: 'rgba(22,163,74,0.08)',
+      hovertemplate: '%{x}<br><b>%{y} GDD</b><extra></extra>'
+    }], {
+      margin: { t: 8, r: 16, b: 40, l: 52 },
+      xaxis: { showgrid: false, tickfont: { size: 11, color: '#9ca3af' } },
+      yaxis: { showgrid: true, gridcolor: '#f3f4f6', tickfont: { size: 11, color: '#9ca3af' }, title: { text: 'Cumul. GDD', font: { size: 11, color: '#9ca3af' } } },
+      plot_bgcolor: 'white',
+      paper_bgcolor: 'white',
+      showlegend: false
+    }, { responsive: true, displayModeBar: false });
+  } catch(e) { console.error('Chart error:', e); }
+  <% end %>
 </script>

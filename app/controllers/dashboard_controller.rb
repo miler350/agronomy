@@ -10,7 +10,8 @@ class DashboardController < ApplicationController
         { planting_event: pe, result: }
       end
 
-    @last_synced = WeatherReading.maximum(:updated_at)
+    @last_synced    = WeatherReading.maximum(:updated_at)
+    @growth_stages  = GrowthStage.where.not(gdd_threshold: nil).order(:position)
 
     @locations = Location.order(:name)
     @weather_location = params[:location_id] ? @locations.find_by(id: params[:location_id]) : @locations.first

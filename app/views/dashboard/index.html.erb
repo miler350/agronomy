@@ -1,3 +1,91 @@
+<%# ── Observation Drawer ────────────────────────────────────────────────── %>
+<div id="obs-drawer" style="position:fixed;inset:0;z-index:50;display:flex;justify-content:flex-end;visibility:hidden;">
+  <div id="obs-backdrop" onclick="closeObsDrawer()" style="position:absolute;inset:0;background:rgba(0,0,0,0.35);opacity:0;transition:opacity 0.25s ease;"></div>
+  <div id="obs-panel" style="position:relative;width:420px;max-width:100%;background:white;height:100%;overflow-y:auto;transform:translateX(100%);transition:transform 0.25s ease;box-shadow:-4px 0 24px rgba(0,0,0,0.08);">
+    <div style="padding:24px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <h2 style="font-size:15px;font-weight:700;color:#1F2937;margin:0">Log Observation</h2>
+        <p id="obs-field-name" style="font-size:12px;color:#6b7280;margin:2px 0 0"></p>
+      </div>
+      <button onclick="closeObsDrawer()" style="color:#9ca3af;background:none;border:none;cursor:pointer;font-size:18px;">&#x2715;</button>
+    </div>
+
+    <form id="obs-form" method="post" style="padding:24px;" data-turbo="true">
+      <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:500;color:#4b5563;margin-bottom:6px;">Date Observed</label>
+        <input type="date" name="field_observation[observed_on]" id="obs-date"
+               style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;">
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:500;color:#4b5563;margin-bottom:6px;">Growth Stage Observed</label>
+        <select name="field_observation[growth_stage_id]" id="obs-stage" onchange="obsPrefilGdd(this)"
+                style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;background:white;">
+          <option value="">— Select stage —</option>
+          <% @growth_stages.each do |stage| %>
+            <option value="<%= stage.id %>" data-gdd="<%= stage.gdd_threshold.to_f.round %>">
+              <%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD)
+            </option>
+          <% end %>
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:500;color:#4b5563;margin-bottom:6px;">Observed GDD</label>
+        <input type="number" name="field_observation[observed_gdd]" id="obs-gdd" step="0.1" placeholder="e.g. 850"
+               style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;">
+        <p style="font-size:11px;color:#9ca3af;margin:4px 0 0;">Pre-filled from stage — override if your field differs.</p>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:12px;font-weight:500;color:#4b5563;margin-bottom:6px;">Notes <span style="color:#9ca3af;font-weight:400;">(optional)</span></label>
+        <textarea name="field_observation[notes]" rows="3" placeholder="Field conditions, pest pressure, etc."
+                  style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;resize:none;"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button type="submit"
+                style="flex:1;padding:10px;background:#166534;color:white;font-size:14px;font-weight:600;border-radius:12px;border:none;cursor:pointer;font-family:inherit;">
+          Save Observation
+        </button>
+        <button type="button" onclick="closeObsDrawer()"
+                style="padding:10px 20px;border:1px solid #e5e7eb;color:#6b7280;font-size:14px;font-weight:500;border-radius:12px;background:white;cursor:pointer;font-family:inherit;">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openObsDrawer(fieldId, fieldName) {
+    document.getElementById('obs-field-name').textContent = fieldName;
+    document.getElementById('obs-form').action = '/fields/' + fieldId + '/field_observations';
+    document.getElementById('obs-date').value = '<%= Date.current %>';
+    document.getElementById('obs-stage').value = '';
+    document.getElementById('obs-gdd').value = '';
+    var drawer = document.getElementById('obs-drawer');
+    drawer.style.visibility = 'visible';
+    setTimeout(function() {
+      document.getElementById('obs-backdrop').style.opacity = '1';
+      document.getElementById('obs-panel').style.transform = 'translateX(0)';
+    }, 10);
+  }
+  function closeObsDrawer() {
+    document.getElementById('obs-backdrop').style.opacity = '0';
+    document.getElementById('obs-panel').style.transform = 'translateX(100%)';
+    setTimeout(function() {
+      document.getElementById('obs-drawer').style.visibility = 'hidden';
+    }, 260);
+  }
+  function obsPrefilGdd(select) {
+    var gdd = select.options[select.selectedIndex] && select.options[select.selectedIndex].dataset.gdd;
+    if (gdd) document.getElementById('obs-gdd').value = gdd;
+  }
+</script>
+
 <%= content_for :head do %>
   <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
   <script>
@@ -214,7 +302,8 @@
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-right">
-                  <button class="px-2.5 py-1 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap border border-green-200">
+                  <button onclick="openObsDrawer(<%= pe.field.id %>, '<%= j pe.field.name %>')"
+                          class="px-2.5 py-1 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap border border-green-200">
                     + Observation
                   </button>
                 </td>
