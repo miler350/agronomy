@@ -26,8 +26,13 @@ class VisualCrossingSync
 
   private
 
+  # VC expects "City,State" (no space) in the path, with spaces encoded as %20.
+  def encoded_location
+    CGI.escape(@location.vc_identifier.gsub(", ", ",")).gsub("+", "%20")
+  end
+
   def fetch(from, to)
-    uri = URI("#{BASE_URL}/#{URI.encode_uri_component(@location.vc_identifier)}/#{from}/#{to}")
+    uri = URI("#{BASE_URL}/#{encoded_location}/#{from}/#{to}")
     uri.query = URI.encode_www_form(
       unitGroup: "us",
       include:   "days",
