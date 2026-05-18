@@ -9,4 +9,5 @@ Rails.application.routes.draw do
   resources :planting_events
   get "weather-data", to: "weather_data#index", as: :weather_data
   get "degree-days", to: "degree_days#index", as: :degree_days
+  get "map", to: "map#index", as: :map
 end
