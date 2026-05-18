@@ -1,0 +1,19 @@
+<div class="flex flex-col h-full">
+  <header class="px-8 py-5 bg-white border-b border-gray-200 flex items-center gap-4 sticky top-0 z-10">
+    <%= link_to locations_path, class: "text-gray-400 hover:text-gray-600 transition" do %>
+      <i class="fa-solid fa-arrow-left"></i>
+    <% end %>
+    <div>
+      <h1 class="text-xl font-bold text-[#1F2937]">New Location</h1>
+      <p class="text-sm text-[#6B7280] mt-0.5">Add a new weather station location</p>
+    </div>
+  </header>
+
+  <div class="p-8 overflow-y-auto flex-1">
+    <div class="max-w-lg">
+      <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm p-6">
+        <%= render "form", location: @location %>
+      </div>
+    </div>
+  </div>
+</div>

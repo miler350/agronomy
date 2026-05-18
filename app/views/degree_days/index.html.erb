@@ -1,0 +1,102 @@
+<div class="flex flex-col h-full">
+  <header class="px-8 py-5 bg-white border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
+    <div>
+      <h1 class="text-xl font-bold text-[#1F2937]">Degree Days</h1>
+      <p class="text-sm text-[#6B7280] mt-0.5">Accumulated GDD and growth stage progress for all active planting events</p>
+    </div>
+    <span class="text-xs text-[#6B7280] bg-gray-100 px-3 py-1 rounded-full font-medium">
+      <i class="fa-solid fa-fire mr-1 text-orange-500"></i>
+      <%= @rows.size %> active event<%= @rows.size == 1 ? "" : "s" %>
+    </span>
+  </header>
+
+  <div class="p-8 space-y-6 overflow-y-auto flex-1">
+    <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[1000px]">
+          <thead>
+            <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
+              <th class="pb-3 pt-4 px-6 font-medium">Field</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Location</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Planted</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Product</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Current GDD</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Stage</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Next Stage</th>
+              <th class="pb-3 pt-4 px-4 font-medium">GDD to Next</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Predicted Date</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @rows.each do |row| %>
+              <% pe     = row[:planting_event] %>
+              <% result = row[:result] %>
+              <% stage_short = result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
+              <% next_short  = result.next_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
+              <% pct = [[result.calibrated_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
+              <tr class="hover:bg-gray-50/50 transition-colors">
+                <td class="py-2 px-6">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-[8px] bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
+                      <i class="fa-solid fa-wheat-awn text-xs"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-[#1F2937]"><%= pe.field.name %></span>
+                  </div>
+                </td>
+                <td class="py-2 px-4 text-xs text-[#6B7280]"><%= pe.field.location.name %></td>
+                <td class="py-2 px-4 text-xs text-[#6B7280]">
+                  <%= pe.planted_on&.strftime("%b %-d") || "—" %>
+                </td>
+                <td class="py-2 px-4 text-xs text-[#6B7280]"><%= pe.product.presence || "—" %></td>
+                <td class="py-2 px-4">
+                  <div class="flex flex-col gap-1">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-[#1F2937]">
+                      <%= number_with_delimiter(result.calibrated_gdd.round) %> GDD
+                    </span>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                      <div class="h-1.5 rounded-full" style="width: <%= pct %>%; background: linear-gradient(90deg, #4ade80 0%, #16a34a 100%);"></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-2 px-4 text-xs text-[#1F2937] font-medium"><%= stage_short || "—" %></td>
+                <td class="py-2 px-4 text-xs text-[#6B7280]"><%= next_short || "—" %></td>
+                <td class="py-2 px-4 text-xs text-[#6B7280]">
+                  <% if result.gdd_to_next > 0 %>
+                    <span class="inline-flex items-center gap-1">
+                      <i class="fa-solid fa-fire text-orange-400 text-xs"></i>
+                      <%= number_with_delimiter(result.gdd_to_next) %>
+                    </span>
+                  <% else %>
+                    <span class="text-green-600 font-medium">Complete</span>
+                  <% end %>
+                </td>
+                <td class="py-2 px-4 text-xs text-[#6B7280]">
+                  <%= result.predicted_next_date&.strftime("%b %-d") || "—" %>
+                </td>
+                <td class="py-2 px-4">
+                  <% status_styles = {
+                    on_track: "bg-green-50 text-green-700 border-green-200",
+                    ahead:    "bg-blue-50 text-blue-700 border-blue-200",
+                    delayed:  "bg-orange-50 text-orange-700 border-orange-200"
+                  } %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border <%= status_styles[result.status] %>">
+                    <%= result.status.to_s.tr("_", " ").capitalize %>
+                  </span>
+                </td>
+              </tr>
+            <% end %>
+            <% if @rows.empty? %>
+              <tr>
+                <td colspan="10" class="py-12 px-6 text-center text-sm text-[#6B7280]">
+                  <i class="fa-solid fa-fire text-2xl text-gray-300 mb-3 block"></i>
+                  No planting events found. <%= link_to "Add a planting event", new_planting_event_path, class: "text-[#166534] font-medium hover:underline" %> to start tracking GDD.
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

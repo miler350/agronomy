@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest' };</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= content_for(:title) || "Agronomy" %></title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: {
+              dark: '#1F2937', brown: '#4A3B32', yellow: '#FFDA77',
+              light: '#FFFBEB', green: '#34D399', gray: '#F3F4F6',
+              text: '#374151', muted: '#6B7280'
+            }
+          },
+          boxShadow: {
+            'soft': '0 4px 20px -2px rgba(0,0,0,0.05)',
+            'card': '0 10px 30px -5px rgba(0,0,0,0.08)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { margin:0; padding:0; background-color:#F9FAFB; color:#374151; font-family:'Inter',sans-serif; }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:#D1D5DB; border-radius:10px; }
+    ::-webkit-scrollbar-thumb:hover { background:#9CA3AF; }
+
+    .glass-panel {
+      background:rgba(255,255,255,0.85);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      border:1px solid rgba(255,255,255,0.5);
+    }
+    .progress-gradient { background:linear-gradient(90deg,#4ade80 0%,#16a34a 100%); }
+
+    /* Sidebar collapse */
+    #sidebar { transition: width 0.25s ease; width: 280px; }
+    #sidebar.collapsed { width: 72px; }
+    #sidebar.collapsed .nav-label,
+    #sidebar.collapsed .brand-name,
+    #sidebar.collapsed .user-info { display: none; }
+    #sidebar.collapsed .nav-link { justify-content: center; padding-left: 0; padding-right: 0; }
+    #sidebar.collapsed .brand-area { justify-content: center; }
+    #sidebar.collapsed .user-area { justify-content: center; padding-left: 0; padding-right: 0; }
+  </style>
+  <%= yield :head %>
+</head>
+<body class="m-0 p-0 overflow-x-hidden min-h-screen flex flex-col lg:flex-row">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen sticky top-0 z-40 shadow-soft overflow-hidden">
+
+    <div class="brand-area p-5 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-[#FFDA77] flex items-center justify-center text-brand-brown font-bold flex-shrink-0">
+        <i class="fa-solid fa-leaf text-sm"></i>
+      </div>
+      <span class="brand-name text-xl font-bold text-brand-dark tracking-tight whitespace-nowrap">Agronomy</span>
+    </div>
+
+    <!-- Toggle button -->
+    <button onclick="toggleSidebar()" class="mx-3 mb-2 p-2 rounded-lg text-brand-muted hover:bg-gray-50 hover:text-brand-dark flex items-center justify-center transition-colors">
+      <i id="toggle-icon" class="fa-solid fa-angles-left text-sm"></i>
+    </button>
+
+    <nav class="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+      <%= link_to root_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'dashboard' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-chart-pie w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Overview</span>
+      <% end %>
+
+      <%= link_to locations_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'locations' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-location-dot w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Locations</span>
+      <% end %>
+
+      <%= link_to fields_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'fields' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-wheat-awn w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Fields</span>
+      <% end %>
+
+      <%= link_to growth_stages_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'growth_stages' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-seedling w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Growth Stages</span>
+      <% end %>
+
+      <%= link_to weather_data_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'weather_data' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-cloud-sun w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Weather Data</span>
+      <% end %>
+
+      <%= link_to planting_events_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'planting_events' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-calendar-days w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Planting Data</span>
+      <% end %>
+
+      <%= link_to degree_days_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'degree_days' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-fire w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Degree Days</span>
+      <% end %>
+    </nav>
+
+    <div class="p-3 border-t border-gray-100 space-y-1">
+      <div class="user-area mt-2 flex items-center gap-3 px-4 py-2">
+        <div class="w-9 h-9 rounded-full bg-[#FFDA77] flex items-center justify-center text-brand-brown font-bold flex-shrink-0">
+          <i class="fa-solid fa-user text-sm"></i>
+        </div>
+        <div class="user-info flex-1 min-w-0">
+          <p class="text-sm font-semibold text-brand-dark whitespace-nowrap truncate"><%= current_user.email %></p>
+          <p class="text-xs text-brand-muted capitalize"><%= current_user.role %></p>
+        </div>
+      </div>
+      <%= link_to destroy_user_session_path, data: { turbo_method: :delete }, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-muted hover:bg-gray-50 hover:text-brand-dark font-medium transition-colors" do %>
+        <i class="fa-solid fa-right-from-bracket w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Sign Out</span>
+      <% end %>
+    </div>
+  </aside>
+
+  <!-- Flash Messages -->
+  <% if notice %>
+    <div id="flash-notice" class="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 text-sm px-4 py-3 rounded-xl shadow-md flex items-center gap-3 max-w-sm">
+      <i class="fa-solid fa-circle-check flex-shrink-0"></i>
+      <span class="flex-1"><%= notice %></span>
+      <button onclick="this.parentElement.remove()" class="text-green-600 hover:text-green-800 flex-shrink-0">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  <% end %>
+  <% if alert %>
+    <div id="flash-alert" class="fixed top-4 right-4 z-50 bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3 rounded-xl shadow-md flex items-center gap-3 max-w-sm">
+      <i class="fa-solid fa-circle-exclamation flex-shrink-0"></i>
+      <span class="flex-1"><%= alert %></span>
+      <button onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-800 flex-shrink-0">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  <% end %>
+
+  <!-- Main Content -->
+  <main class="flex-1 w-full max-w-full overflow-hidden flex flex-col bg-[#F3F4F6] relative">
+    <div class="absolute top-0 right-0 w-[600px] h-[400px] bg-gradient-to-bl from-[#FFFBEB] to-transparent opacity-60 pointer-events-none"></div>
+    <%= yield %>
+  </main>
+
+  <script>
+    // Sidebar toggle
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const icon    = document.getElementById('toggle-icon');
+      sidebar.classList.toggle('collapsed');
+      icon.className = sidebar.classList.contains('collapsed')
+        ? 'fa-solid fa-angles-right text-sm'
+        : 'fa-solid fa-angles-left text-sm';
+    }
+
+    // Auto-dismiss flash messages
+    ['flash-notice', 'flash-alert'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) setTimeout(function() { el.remove(); }, 4000);
+    });
+  </script>
+</body>
+</html>

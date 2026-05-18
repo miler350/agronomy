@@ -1,0 +1,73 @@
+<div class="flex flex-col h-full">
+  <header class="px-8 py-5 bg-white border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
+    <div>
+      <h1 class="text-xl font-bold text-[#1F2937]">Fields</h1>
+      <p class="text-sm text-[#6B7280] mt-0.5">Manage farm fields and their geographic coordinates</p>
+    </div>
+    <%= link_to new_field_path, class: "flex items-center gap-2 px-4 py-2 bg-[#166534] text-white text-sm font-semibold rounded-xl hover:bg-[#14532d] transition" do %>
+      <i class="fa-solid fa-plus text-xs"></i>
+      New Field
+    <% end %>
+  </header>
+
+  <div class="p-8 space-y-6 overflow-y-auto flex-1">
+    <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
+            <th class="pb-3 pt-4 px-6 font-medium">Name</th>
+            <th class="pb-3 pt-4 px-4 font-medium">Location</th>
+            <th class="pb-3 pt-4 px-4 font-medium">Lat / Lng</th>
+            <th class="pb-3 pt-4 px-4 font-medium">Planting Events</th>
+            <th class="pb-3 pt-4 px-4 font-medium text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% @fields.each do |field| %>
+            <tr class="hover:bg-gray-50/50 transition-colors">
+              <td class="py-2 px-6">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-[8px] bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
+                    <i class="fa-solid fa-wheat-awn text-xs"></i>
+                  </div>
+                  <span class="text-sm font-semibold text-[#1F2937]"><%= field.name %></span>
+                </div>
+              </td>
+              <td class="py-2 px-4 text-xs text-[#6B7280]"><%= field.location.name %></td>
+              <td class="py-2 px-4 text-xs text-[#6B7280] font-mono">
+                <% if field.latitude.present? && field.longitude.present? %>
+                  <%= field.latitude.to_f.round(4) %>, <%= field.longitude.to_f.round(4) %>
+                <% else %>
+                  <span class="text-gray-400">—</span>
+                <% end %>
+              </td>
+              <td class="py-2 px-4 text-xs text-[#1F2937]">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                  <%= field.planting_events.size %> event<%= field.planting_events.size == 1 ? "" : "s" %>
+                </span>
+              </td>
+              <td class="py-2 px-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <%= link_to edit_field_path(field), class: "px-3 py-1 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 hover:bg-gray-100 transition border border-gray-200" do %>
+                    <i class="fa-solid fa-pencil mr-1"></i> Edit
+                  <% end %>
+                  <%= link_to field, data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete #{field.name}?" }, class: "px-3 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition border border-red-200" do %>
+                    <i class="fa-solid fa-trash mr-1"></i> Delete
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+          <% if @fields.empty? %>
+            <tr>
+              <td colspan="5" class="py-12 px-6 text-center text-sm text-[#6B7280]">
+                <i class="fa-solid fa-wheat-awn text-2xl text-gray-300 mb-3 block"></i>
+                No fields yet. <%= link_to "Add your first field", new_field_path, class: "text-[#166534] font-medium hover:underline" %>.
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

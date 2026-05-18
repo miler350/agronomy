@@ -1,4 +1,6 @@
 class DashboardController < ApplicationController
+  layout "dashboard"
+
   def index
     @rows = PlantingEvent.includes(field: :location, field_observations: :growth_stage)
       .joins(:field)

@@ -1,0 +1,27 @@
+<%= form_with model: location, class: "space-y-5" do |f| %>
+  <% if location.errors.any? %>
+    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+      <ul class="space-y-1">
+        <% location.errors.full_messages.each do |msg| %>
+          <li class="text-sm text-red-700"><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :name, class: "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-transparent", placeholder: "e.g. Orange County" %>
+  </div>
+
+  <div>
+    <%= f.label :vc_identifier, "VC Identifier", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :vc_identifier, class: "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-transparent", placeholder: "e.g. Orange,VA" %>
+    <p class="mt-1 text-xs text-gray-500">City,State format — e.g. Orange,VA</p>
+  </div>
+
+  <div class="flex items-center gap-3 pt-2">
+    <%= f.submit location.new_record? ? "Create Location" : "Update Location", class: "px-5 py-2 bg-[#166534] text-white text-sm font-semibold rounded-lg hover:bg-[#14532d] transition cursor-pointer" %>
+    <%= link_to "Cancel", locations_path, class: "px-5 py-2 text-sm font-medium text-gray-600 hover:text-gray-800" %>
+  </div>
+<% end %>
