@@ -172,6 +172,7 @@
       icon.className = sidebar.classList.contains('collapsed')
         ? 'fa-solid fa-angles-right text-sm'
         : 'fa-solid fa-angles-left text-sm';
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 260);
     }
 
     // Auto-dismiss flash messages
