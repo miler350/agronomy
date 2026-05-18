@@ -17,9 +17,19 @@
       // Forecast chart
       var chartEl = document.getElementById('forecast-chart');
       if (chartEl && typeof Plotly !== 'undefined') {
+        var chartDates = <%= raw (@chart_readings || []).map { |r| r.date.strftime("%a %-d") }.to_json %>;
+        var chartGdd   = <%= raw begin
+          cumulative = 0
+          (@chart_readings || []).map { |r|
+            tmax = [r.max_temperature.to_f, 86].min
+            tmin = [r.min_temperature.to_f, 50].max
+            cumulative += [(tmax + tmin) / 2.0 - 50, 0].max
+            cumulative.round
+          }
+        end.to_json %>;
         var data = [{
-          x: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-          y: [12,18,22,28,35,42,48],
+          x: chartDates.length ? chartDates : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+          y: chartGdd.length   ? chartGdd   : [12,18,22,28,35,42,48],
           type: 'scatter', mode: 'lines', fill: 'tozeroy',
           line: { shape: 'spline', smoothing: 1.3, color: '#ffffff', width: 2 },
           fillcolor: 'rgba(255,255,255,0.2)', hoverinfo: 'y'
@@ -27,7 +37,7 @@
         var layout = {
           margin: { t:10, r:0, b:20, l:0 },
           paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-          xaxis: { showgrid:false, showline:false, zeroline:false, tickfont: { color:'rgba(74,59,50,0.7)', size:10 } },
+          xaxis: { showgrid:false, showline:false, zeroline:false, tickfont: { color:'rgba(255,255,255,0.6)', size:10 } },
           yaxis: { showgrid:false, showline:false, zeroline:false, showticklabels:false },
           showlegend: false, hovermode: 'x unified'
         };
@@ -66,42 +76,44 @@
       <!-- Weather Widget -->
       <section class="col-span-1 lg:col-span-2 bg-white rounded-[24px] p-6 shadow-card border border-gray-100">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-semibold text-brand-dark">Charlottesville Weather Forecast</h2>
-          <select class="text-sm text-brand-muted border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#FFDA77] bg-white cursor-pointer">
-            <option>Orange, VA</option>
-            <option>Rochelle, VA</option>
-            <option>Ruckersville, VA</option>
-            <option selected>Madison, VA</option>
-          </select>
+          <h2 class="text-lg font-semibold text-brand-dark"><%= @weather_location&.name || "Weather" %> Forecast</h2>
+          <%= form_tag root_path, method: :get, class: "inline" do %>
+            <%= select_tag :location_id,
+                options_from_collection_for_select(@locations, :id, :name, @weather_location&.id),
+                onchange: "this.form.submit()",
+                class: "text-sm text-brand-muted border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#FFDA77] bg-white cursor-pointer" %>
+          <% end %>
         </div>
+        <% r = @today_reading %>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2 bg-gray-50/50">
             <div class="w-10 h-10 rounded-full bg-[#FFDA77]/20 flex items-center justify-center text-[#F59E0B]">
               <i class="fa-solid fa-sun text-xl"></i>
             </div>
             <span class="text-xs text-brand-muted font-medium uppercase tracking-wider">Avg Temp</span>
-            <span class="text-xl font-bold text-brand-dark">72&deg;F</span>
+            <span class="text-xl font-bold text-brand-dark"><%= r ? "#{r.temperature.round}°F" : "—" %></span>
           </div>
           <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2">
             <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
               <i class="fa-solid fa-droplet text-xl"></i>
             </div>
             <span class="text-xs text-brand-muted font-medium uppercase tracking-wider">Precipitation</span>
-            <span class="text-xl font-bold text-brand-dark">0.2"</span>
+            <span class="text-xl font-bold text-brand-dark"><%= r ? "#{r.precip.round(2)}\"" : "—" %></span>
           </div>
           <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2">
             <div class="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-500">
               <i class="fa-solid fa-wind text-xl"></i>
             </div>
             <span class="text-xs text-brand-muted font-medium uppercase tracking-wider">Wind</span>
-            <span class="text-xl font-bold text-brand-dark">8 mph</span>
+            <span class="text-xl font-bold text-brand-dark"><%= r ? "#{r.wind_speed.round} mph" : "—" %></span>
           </div>
           <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2">
             <div class="w-10 h-10 rounded-full bg-[#FFF7ED] flex items-center justify-center text-[#EA580C]">
               <i class="fa-solid fa-fire text-xl"></i>
             </div>
             <span class="text-xs text-brand-muted font-medium uppercase tracking-wider">Daily GDD</span>
-            <span class="text-xl font-bold text-brand-dark">+18</span>
+            <% today_gdd = r ? [[([r.max_temperature.to_f, 86].min + [r.min_temperature.to_f, 50].max) / 2.0 - 50, 0].max.round, 0].max : nil %>
+            <span class="text-xl font-bold text-brand-dark"><%= today_gdd ? "+#{today_gdd}" : "—" %></span>
           </div>
         </div>
       </section>
@@ -114,10 +126,16 @@
         </div>
         <div class="relative z-10">
           <div class="flex items-baseline gap-2 mb-1">
-            <span class="text-3xl font-bold">+245</span>
+            <span class="text-3xl font-bold">+<%= @forecast_gdd || "—" %></span>
             <span class="text-sm font-medium opacity-80">Expected GDD</span>
           </div>
-          <p class="text-sm opacity-90 mb-4">Accelerated growth expected due to upcoming heat wave.</p>
+          <p class="text-sm opacity-90 mb-4">
+            <% if @forecast_gdd && @forecast_gdd > 0 %>
+              <%= @weather_location&.name %> forecast for the next 14 days.
+            <% else %>
+              No forecast data available for this location.
+            <% end %>
+          </p>
         </div>
         <div id="forecast-chart" class="h-[120px] w-full relative z-10"></div>
       </section>
