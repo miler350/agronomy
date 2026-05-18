@@ -45,7 +45,7 @@
             -webkit-backdrop-filter:blur(12px);
             border:1px solid rgba(255,255,255,0.5);
         }
-        .progress-gradient { background:linear-gradient(90deg,#FFDA77 0%,#FCD34D 100%); }
+        .progress-gradient { background:linear-gradient(90deg,#4ade80 0%,#16a34a 100%); }
 
         /* Sidebar collapse */
         #sidebar { transition: width 0.25s ease; width: 280px; }
@@ -76,7 +76,7 @@
         </button>
 
         <nav class="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-            <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] bg-[#FFFBEB] text-brand-brown font-medium transition-colors">
+            <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] bg-green-50 text-green-800 font-medium transition-colors">
                 <i class="fa-solid fa-chart-pie w-5 text-center flex-shrink-0"></i>
                 <span class="nav-label whitespace-nowrap">Overview</span>
             </a>
@@ -150,7 +150,7 @@
                         </select>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2 bg-[#FFFBEB]/50">
+                        <div class="p-4 rounded-[16px] border border-gray-100 flex flex-col items-center justify-center gap-2 bg-gray-50/50">
                             <div class="w-10 h-10 rounded-full bg-[#FFDA77]/20 flex items-center justify-center text-[#F59E0B]">
                                 <i class="fa-solid fa-sun text-xl"></i>
                             </div>
@@ -182,10 +182,10 @@
                 </section>
 
                 <!-- GDD Forecast -->
-                <section class="col-span-1 bg-gradient-to-br from-[#FFDA77] to-[#FCD34D] rounded-[24px] p-6 shadow-card relative overflow-hidden text-brand-brown">
+                <section class="col-span-1 bg-gradient-to-br from-[#166534] to-[#15803d] rounded-[24px] p-6 shadow-card relative overflow-hidden text-white">
                     <div class="flex justify-between items-center mb-4 relative z-10">
                         <h2 class="text-lg font-semibold">GDD Forecast</h2>
-                        <span class="text-xs bg-white/30 px-2 py-1 rounded-md font-medium">Next 14 Days</span>
+                        <span class="text-xs bg-white/20 px-2 py-1 rounded-md font-medium">Next 14 Days</span>
                     </div>
                     <div class="relative z-10">
                         <div class="flex items-baseline gap-2 mb-1">
@@ -233,7 +233,7 @@
                                 <tr class="hover:bg-gray-50/50 transition-colors field-row">
                                     <td class="py-4 pl-4">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-9 h-9 rounded-[10px] bg-[#FFFBEB] flex items-center justify-center text-[#F59E0B] flex-shrink-0">
+                                            <div class="w-9 h-9 rounded-[10px] bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
                                                 <i class="fa-solid fa-wheat-awn text-sm"></i>
                                             </div>
                                             <div>
@@ -264,7 +264,7 @@
                                     <td class="py-4 text-sm text-brand-muted"><%= result.gdd_to_next %></td>
                                     <td class="py-4 text-sm text-brand-dark"><%= result.predicted_next_date&.strftime("%b %-d") || "—" %></td>
                                     <td class="py-4 pr-4 text-right">
-                                        <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#FFFBEB] text-brand-brown hover:bg-[#FFDA77]/40 transition-colors whitespace-nowrap">
+                                        <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap border border-green-200">
                                             + Observation
                                         </button>
                                     </td>
