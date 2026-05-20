@@ -90,17 +90,59 @@
   <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Field search
-      var searchInput = document.getElementById('field-search');
-      if (searchInput) {
-        searchInput.addEventListener('input', function() {
-          var q = this.value.toLowerCase();
-          document.querySelectorAll('.field-row').forEach(function(row) {
-            var name = row.querySelector('.field-name').textContent.toLowerCase();
-            row.style.display = name.includes(q) ? '' : 'none';
-          });
+      var sortCol = null, sortDir = 'asc';
+
+      window.applyTable = function() {
+        var rows  = Array.from(document.querySelectorAll('.field-row'));
+        var tbody = rows[0] && rows[0].parentNode;
+        if (!tbody) return;
+
+        var search       = (document.getElementById('field-search')?.value || '').toLowerCase();
+        var filterLoc    = document.getElementById('filter-location')?.value || '';
+        var filterStatus = document.getElementById('filter-status')?.value   || '';
+        var filterStage  = document.getElementById('filter-stage')?.value    || '';
+
+        rows.forEach(function(row) {
+          var name = (row.querySelector('.field-name')?.textContent || '').toLowerCase();
+          var show = (!search || name.includes(search)) &&
+                     (!filterLoc    || row.dataset.location === filterLoc)    &&
+                     (!filterStatus || row.dataset.status   === filterStatus)  &&
+                     (!filterStage  || row.dataset.stage    === filterStage);
+          row.style.display = show ? '' : 'none';
         });
-      }
+
+        if (sortCol) {
+          rows.slice().sort(function(a, b) {
+            var va = a.dataset[sortCol] || '', vb = b.dataset[sortCol] || '';
+            return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+          }).forEach(function(r) { tbody.appendChild(r); });
+        }
+      };
+
+      window.setSort = function(col) {
+        sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
+        sortCol = col;
+        ['planted', 'predicted'].forEach(function(c) {
+          var el = document.getElementById('sort-icon-' + c);
+          if (!el) return;
+          el.textContent = sortCol === c ? (sortDir === 'asc' ? '↑' : '↓') : '↕';
+          el.style.color  = sortCol === c ? '#166534' : '';
+        });
+        applyTable();
+      };
+
+      // Populate location and stage dropdowns from row data
+      var rows   = Array.from(document.querySelectorAll('.field-row'));
+      var locs   = [...new Set(rows.map(function(r){ return r.dataset.location; }).filter(Boolean))].sort();
+      var stages = [...new Set(rows.map(function(r){ return r.dataset.stage;    }).filter(Boolean))].sort();
+      var locSel   = document.getElementById('filter-location');
+      var stageSel = document.getElementById('filter-stage');
+      locs.forEach(function(l)   { var o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o);   });
+      stages.forEach(function(s) { var o = document.createElement('option'); o.value = s; o.textContent = s; stageSel.appendChild(o); });
+
+      // Search input
+      var searchInput = document.getElementById('field-search');
+      if (searchInput) searchInput.addEventListener('input', applyTable);
 
       // Forecast chart
       var chartEl = document.getElementById('forecast-chart');
@@ -143,13 +185,6 @@
       <p class="text-sm text-brand-muted mt-1">Cumulative Growing Degree Days (GDD) &middot; Last synced: <%= @last_synced&.in_time_zone("Eastern Time (US & Canada)")&.strftime("%b %-d, %-I:%M %p ET") %></p>
     </div>
     <div class="flex items-center gap-4 w-full sm:w-auto">
-      <div class="relative w-full sm:w-64">
-        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        <input type="text" id="field-search" placeholder="Search fields..." class="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFDA77] focus:border-transparent text-sm">
-      </div>
-      <button class="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-brand-dark hover:bg-gray-50 flex-shrink-0">
-        <i class="fa-regular fa-bell"></i>
-      </button>
       <button class="px-5 py-2.5 rounded-full bg-brand-brown text-white text-sm font-medium hover:bg-[#3A2D25] transition-colors shadow-md flex-shrink-0">
         Export Data
       </button>
@@ -233,9 +268,19 @@
     <section class="bg-white rounded-[24px] p-6 shadow-card border border-gray-100">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-lg font-semibold text-brand-dark">Active Fields Progress</h2>
-        <div class="flex gap-2">
-          <button class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-brand-muted hover:bg-gray-50">Filter</button>
-          <button class="px-3 py-1.5 rounded-lg bg-[#F3F4F6] text-sm font-medium text-brand-dark">All Fields</button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <select id="filter-location" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+            <option value="">All Locations</option>
+          </select>
+          <select id="filter-status" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+            <option value="">All Statuses</option>
+            <option value="on_track">On Track</option>
+            <option value="ahead">Ahead</option>
+            <option value="delayed">Delayed</option>
+          </select>
+          <select id="filter-stage" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+            <option value="">All Stages</option>
+          </select>
         </div>
       </div>
 
@@ -244,13 +289,13 @@
           <thead>
             <tr class="border-b border-gray-100 text-xs text-brand-muted uppercase tracking-wider">
               <th class="pb-3 font-medium pl-4">Field</th>
-              <th class="pb-3 font-medium">Planted</th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('planted')">Planted <span id="sort-icon-planted" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 font-medium">Hybrid</th>
               <th class="pb-3 font-medium">Accum. GDD</th>
               <th class="pb-3 font-medium w-48">Stage Progress</th>
               <th class="pb-3 font-medium">Next Stage</th>
               <th class="pb-3 font-medium">GDD to Next</th>
-              <th class="pb-3 font-medium">Predicted Date</th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('predicted')">Predicted Date <span id="sort-icon-predicted" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 font-medium">Status</th>
               <th class="pb-3 font-medium pr-4 text-right"></th>
             </tr>
@@ -262,7 +307,12 @@
               <% stage_short = result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
               <% next_short  = result.next_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
               <% pct = [[result.calibrated_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
-              <tr class="hover:bg-gray-50/50 transition-colors field-row">
+              <tr class="hover:bg-gray-50/50 transition-colors field-row"
+                  data-location="<%= pe.field.location.name %>"
+                  data-status="<%= result.status %>"
+                  data-stage="<%= result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>"
+                  data-planted="<%= pe.planted_on %>"
+                  data-predicted="<%= result.predicted_next_date || '' %>">
                 <td class="py-2 pl-4">
                   <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-[8px] bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
