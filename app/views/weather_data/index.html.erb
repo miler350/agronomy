@@ -1,104 +1,137 @@
 <div class="flex flex-col h-full">
+
   <header class="px-8 py-5 bg-white border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
     <div>
       <h1 class="text-xl font-bold text-[#1F2937]">Weather Data</h1>
-      <p class="text-sm text-[#6B7280] mt-0.5">Historical weather readings by location &mdash; last 60 days</p>
+      <p class="text-sm text-[#6B7280] mt-0.5">Visual Crossing daily readings by location</p>
     </div>
-    <% if @location %>
-      <span class="text-xs text-[#6B7280] bg-gray-100 px-3 py-1 rounded-full font-medium">
-        <i class="fa-solid fa-location-dot mr-1"></i>
-        <%= @location.vc_identifier %>
-      </span>
-    <% end %>
   </header>
 
-  <div class="p-8 space-y-6 overflow-y-auto flex-1">
+  <div class="p-8 space-y-5 overflow-y-auto flex-1">
 
-    <!-- Location selector -->
+    <%# Filters %>
     <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm p-5">
-      <%= form_with url: weather_data_path, method: :get, local: true, class: "flex items-center gap-4" do |f| %>
-        <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Location:</label>
-        <%= f.select :location_id,
-              @locations.map { |l| [l.name, l.id] },
-              { selected: @location&.id, include_blank: false },
-              { class: "px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]", onchange: "this.form.submit()" } %>
-        <% unless @locations.any? %>
-          <span class="text-sm text-gray-500">No locations configured.</span>
+      <%= form_with url: weather_data_path, method: :get, local: true, class: "flex flex-wrap items-end gap-4" do |f| %>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Location</label>
+          <%= f.select :location_id,
+                @locations.map { |l| [l.name, l.id] },
+                { selected: @location&.id },
+                { class: "px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] bg-white" } %>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">From</label>
+          <input type="date" name="date_from" value="<%= @date_from %>"
+                 class="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">To</label>
+          <input type="date" name="date_to" value="<%= @date_to %>"
+                 class="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+        </div>
+        <button type="submit"
+                class="px-4 py-2 bg-[#166534] text-white text-sm font-semibold rounded-lg hover:bg-[#14532d] transition">
+          Apply
+        </button>
+        <%= link_to weather_data_path(location_id: @location&.id), class: "px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition" do %>
+          Reset
         <% end %>
       <% end %>
     </div>
 
     <% if @location && @readings %>
-      <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
-        <table class="w-full text-left border-collapse min-w-[800px]">
-          <thead>
-            <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
-              <th class="pb-3 pt-4 px-6 font-medium">Date</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Max Temp</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Min Temp</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Avg Temp</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Precip</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Wind</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Humidity</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Conditions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <% @readings.each do |reading| %>
-              <tr class="hover:bg-gray-50/50 transition-colors">
-                <td class="py-2 px-6 text-xs font-medium text-[#1F2937]">
-                  <%= reading.date.strftime("%b %-d, %Y") %>
-                </td>
-                <td class="py-2 px-4 text-xs text-[#1F2937]">
-                  <% if reading.max_temperature %>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700">
-                      <%= reading.max_temperature.to_f.round(1) %>&deg;F
-                    </span>
-                  <% else %>
-                    <span class="text-gray-400">—</span>
-                  <% end %>
-                </td>
-                <td class="py-2 px-4 text-xs text-[#1F2937]">
-                  <% if reading.min_temperature %>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                      <%= reading.min_temperature.to_f.round(1) %>&deg;F
-                    </span>
-                  <% else %>
-                    <span class="text-gray-400">—</span>
-                  <% end %>
-                </td>
-                <td class="py-2 px-4 text-xs text-[#6B7280]">
-                  <%= reading.temperature ? "#{reading.temperature.to_f.round(1)}°F" : "—" %>
-                </td>
-                <td class="py-2 px-4 text-xs text-[#6B7280]">
-                  <%= reading.precip ? "#{reading.precip.to_f.round(2)}\"" : "—" %>
-                </td>
-                <td class="py-2 px-4 text-xs text-[#6B7280]">
-                  <%= reading.wind_speed ? "#{reading.wind_speed.to_f.round(1)} mph" : "—" %>
-                </td>
-                <td class="py-2 px-4 text-xs text-[#6B7280]">
-                  <%= reading.humidity ? "#{reading.humidity.to_f.round(0)}%" : "—" %>
-                </td>
-                <td class="py-2 px-4 text-xs text-[#6B7280]">
-                  <%= reading.conditions.presence || "—" %>
-                </td>
-              </tr>
-            <% end %>
-            <% if @readings.empty? %>
-              <tr>
-                <td colspan="8" class="py-12 px-6 text-center text-sm text-[#6B7280]">
-                  <i class="fa-solid fa-cloud-sun text-2xl text-gray-300 mb-3 block"></i>
-                  No weather data found for <%= @location.name %>.
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
+
+      <%# Summary cards %>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Total GDD</p>
+          <p class="text-2xl font-bold text-[#1F2937]"><%= number_with_delimiter(@total_gdd) %></p>
+          <p class="text-xs text-gray-400 mt-0.5">Base 50°F, cap 86°F</p>
+        </div>
+        <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Precip</p>
+          <p class="text-2xl font-bold text-[#1F2937]"><%= @total_precip %>"</p>
+          <p class="text-xs text-gray-400 mt-0.5">Over <%= @readings.size %> days</p>
+        </div>
+        <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Avg High</p>
+          <p class="text-2xl font-bold text-[#1F2937]"><%= @avg_high ? "#{@avg_high}°F" : "—" %></p>
+        </div>
+        <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Avg Low</p>
+          <p class="text-2xl font-bold text-[#1F2937]"><%= @avg_low ? "#{@avg_low}°F" : "—" %></p>
+        </div>
       </div>
+
+      <%# Data table %>
+      <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <span class="text-sm font-semibold text-[#1F2937]"><%= @location.name %></span>
+          <span class="text-xs text-gray-400"><%= @readings.size %> days &middot; <%= @date_from.strftime("%b %-d") %> – <%= @date_to.strftime("%b %-d, %Y") %></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse" style="min-width: 960px;">
+            <thead>
+              <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider bg-gray-50/60">
+                <th class="px-5 py-3 font-medium">Date</th>
+                <th class="px-4 py-3 font-medium">Max °F</th>
+                <th class="px-4 py-3 font-medium">Min °F</th>
+                <th class="px-4 py-3 font-medium">Avg °F</th>
+                <th class="px-4 py-3 font-medium text-[#16a34a]">Daily GDD</th>
+                <th class="px-4 py-3 font-medium">Precip"</th>
+                <th class="px-4 py-3 font-medium">Humidity</th>
+                <th class="px-4 py-3 font-medium">Wind mph</th>
+                <th class="px-4 py-3 font-medium">Gust mph</th>
+                <th class="px-4 py-3 font-medium">UV</th>
+                <th class="px-4 py-3 font-medium">Cloud</th>
+                <th class="px-4 py-3 font-medium">Conditions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <% @readings.each do |r| %>
+                <% gdd = r.max_temperature && r.min_temperature ? [([r.max_temperature.to_f, 86].min + [r.min_temperature.to_f, 50].max) / 2.0 - 50, 0].max.round(1) : 0 %>
+                <% is_today = r.date == Date.current %>
+                <tr class="hover:bg-gray-50/50 transition-colors <%= 'bg-green-50/40' if is_today %>">
+                  <td class="px-5 py-2 text-xs font-semibold text-[#1F2937] whitespace-nowrap">
+                    <%= r.date.strftime("%a, %b %-d") %>
+                    <% if is_today %><span class="ml-1 text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">Today</span><% end %>
+                  </td>
+                  <td class="px-4 py-2 text-xs font-medium text-orange-600"><%= r.max_temperature ? r.max_temperature.to_f.round(1) : "—" %></td>
+                  <td class="px-4 py-2 text-xs font-medium text-blue-600"><%= r.min_temperature ? r.min_temperature.to_f.round(1) : "—" %></td>
+                  <td class="px-4 py-2 text-xs text-[#6B7280]"><%= r.temperature ? r.temperature.to_f.round(1) : "—" %></td>
+                  <td class="px-4 py-2">
+                    <% if gdd > 0 %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-800">+<%= gdd %></span>
+                    <% else %>
+                      <span class="text-xs text-gray-400">0</span>
+                    <% end %>
+                  </td>
+                  <td class="px-4 py-2 text-xs text-[#6B7280]"><%= r.precip ? r.precip.to_f.round(2) : "—" %></td>
+                  <td class="px-4 py-2 text-xs text-[#6B7280]"><%= r.humidity ? "#{r.humidity.to_f.round(0)}%" : "—" %></td>
+                  <td class="px-4 py-2 text-xs text-[#6B7280]"><%= r.wind_speed ? r.wind_speed.to_f.round(1) : "—" %></td>
+                  <td class="px-4 py-2 text-xs text-[#6B7280]"><%= r.wind_gust ? r.wind_gust.to_f.round(1) : "—" %></td>
+                  <td class="px-4 py-2 text-xs text-[#6B7280]"><%= r.uv_index || "—" %></td>
+                  <td class="px-4 py-2 text-xs text-[#6B7280]"><%= r.cloud_cover ? "#{r.cloud_cover.to_f.round(0)}%" : "—" %></td>
+                  <td class="px-4 py-2 text-xs text-[#6B7280] max-w-[160px] truncate"><%= r.conditions.presence || "—" %></td>
+                </tr>
+              <% end %>
+              <% if @readings.empty? %>
+                <tr>
+                  <td colspan="12" class="py-12 text-center text-sm text-[#6B7280]">
+                    <i class="fa-solid fa-cloud-sun text-2xl text-gray-300 mb-3 block"></i>
+                    No readings found for this date range.
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     <% elsif @locations.empty? %>
       <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm p-12 text-center">
         <i class="fa-solid fa-cloud-sun text-3xl text-gray-300 mb-3 block"></i>
-        <p class="text-sm text-gray-500">No locations configured yet. <%= link_to "Add a location", new_location_path, class: "text-[#166534] font-medium hover:underline" %> to start tracking weather data.</p>
+        <p class="text-sm text-gray-500">No locations configured yet. <%= link_to "Add a location", new_location_path, class: "text-[#166534] font-medium hover:underline" %>.</p>
       </div>
     <% end %>
 
