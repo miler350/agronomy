@@ -81,141 +81,110 @@
   map.addControl(new mapboxgl.NavigationControl(), 'top-right');
   map.addControl(new mapboxgl.ScaleControl(), 'bottom-right');
 
+  let cachedGeojson = null;
+  const popup = new mapboxgl.Popup({ closeButton: true, maxWidth: '260px' });
+  let hoveredId = null;
+
+  function addFieldLayers() {
+    if (!cachedGeojson) return;
+
+    map.addSource('fields', { type: 'geojson', data: cachedGeojson, generateId: true });
+
+    map.addLayer({
+      id: 'fields-fill', type: 'fill', source: 'fields',
+      paint: {
+        'fill-color': ['match', ['get', 'status'], 'on_track', '#16a34a', 'ahead', '#3b82f6', 'delayed', '#f97316', '#9ca3af'],
+        'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.75, 0.45]
+      }
+    });
+
+    map.addLayer({
+      id: 'fields-outline', type: 'line', source: 'fields',
+      paint: {
+        'line-color': ['match', ['get', 'status'], 'on_track', '#15803d', 'ahead', '#2563eb', 'delayed', '#ea580c', '#6b7280'],
+        'line-width': 1.5
+      }
+    });
+
+    map.addLayer({
+      id: 'fields-labels', type: 'symbol', source: 'fields',
+      layout: {
+        'text-field': ['get', 'field_id'],
+        'text-size': 11,
+        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+        'text-anchor': 'center'
+      },
+      paint: { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.4)', 'text-halo-width': 1 }
+    });
+
+    map.on('mousemove', 'fields-fill', e => {
+      map.getCanvas().style.cursor = 'pointer';
+      if (hoveredId !== null) map.setFeatureState({ source: 'fields', id: hoveredId }, { hover: false });
+      hoveredId = e.features[0].id;
+      map.setFeatureState({ source: 'fields', id: hoveredId }, { hover: true });
+    });
+    map.on('mouseleave', 'fields-fill', () => {
+      map.getCanvas().style.cursor = '';
+      if (hoveredId !== null) map.setFeatureState({ source: 'fields', id: hoveredId }, { hover: false });
+      hoveredId = null;
+    });
+
+    map.on('click', 'fields-fill', e => {
+      const p = e.features[0].properties;
+      const statusLabel = { on_track: 'On Track', ahead: 'Ahead', delayed: 'Delayed', no_data: 'No Data' }[p.status] || 'No Data';
+      const sBg = { on_track: '#dcfce7', ahead: '#dbeafe', delayed: '#ffedd5', no_data: '#f3f4f6' }[p.status] || '#f3f4f6';
+      const sFg = { on_track: '#15803d', ahead: '#1d4ed8', delayed: '#c2410c', no_data: '#6b7280' }[p.status] || '#6b7280';
+
+      const html = p.has_data ? `
+        <div style="padding:14px 16px;border-bottom:1px solid #f3f4f6">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+            <div>
+              <p style="font-weight:700;font-size:15px;color:#1f2937;margin:0">${p.field_id}</p>
+              <p style="font-size:12px;color:#6b7280;margin:2px 0 0">${p.farm} &middot; ${p.acreage} ac</p>
+            </div>
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:${sBg};color:${sFg};white-space:nowrap">${statusLabel}</span>
+          </div>
+        </div>
+        <div style="padding:12px 16px;font-size:13px;color:#374151;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">GDD</p><p style="font-weight:600;margin:0">${p.gdd}</p></div>
+          <div><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">Stage</p><p style="font-weight:600;margin:0">${p.stage}</p></div>
+          <div><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">Next</p><p style="font-weight:600;margin:0">${p.next_stage}</p></div>
+          <div><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">GDD to Next</p><p style="font-weight:600;margin:0">${p.gdd_to_next}</p></div>
+          <div style="grid-column:span 2"><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">Hybrid</p><p style="font-weight:600;margin:0">${p.product}</p></div>
+          <div style="grid-column:span 2"><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">Planted</p><p style="font-weight:600;margin:0">${p.planted_on}</p></div>
+        </div>
+      ` : `
+        <div style="padding:14px 16px">
+          <p style="font-weight:700;font-size:15px;color:#1f2937;margin:0 0 2px">${p.field_id}</p>
+          <p style="font-size:12px;color:#6b7280;margin:0">${p.farm} &middot; ${p.acreage} ac</p>
+          <p style="font-size:12px;color:#9ca3af;margin:10px 0 0">No planting data this season</p>
+        </div>
+      `;
+      popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
+    });
+  }
+
   map.on('load', () => {
     fetch('/fields.geojson')
       .then(r => r.json())
       .then(geojson => {
-        // Merge GDD data into GeoJSON properties
         geojson.features.forEach(f => {
-          const id = f.properties.field_id;
-          const d  = fieldData[id];
-          if (d) {
-            Object.assign(f.properties, d, { has_data: true });
-          } else {
-            f.properties.has_data = false;
-            f.properties.status   = 'no_data';
-          }
+          const d = fieldData[f.properties.field_id];
+          if (d) { Object.assign(f.properties, d, { has_data: true }); }
+          else   { f.properties.has_data = false; f.properties.status = 'no_data'; }
         });
+        cachedGeojson = geojson;
+        addFieldLayers();
 
-        map.addSource('fields', { type: 'geojson', data: geojson, generateId: true });
-
-        // Fill layer
-        map.addLayer({
-          id: 'fields-fill',
-          type: 'fill',
-          source: 'fields',
-          paint: {
-            'fill-color': [
-              'match', ['get', 'status'],
-              'on_track', '#16a34a',
-              'ahead',    '#3b82f6',
-              'delayed',  '#f97316',
-              '#9ca3af'
-            ],
-            'fill-opacity': [
-              'case', ['boolean', ['feature-state', 'hover'], false], 0.75, 0.45
-            ]
-          }
-        });
-
-        // Outline layer
-        map.addLayer({
-          id: 'fields-outline',
-          type: 'line',
-          source: 'fields',
-          paint: {
-            'line-color': [
-              'match', ['get', 'status'],
-              'on_track', '#15803d',
-              'ahead',    '#2563eb',
-              'delayed',  '#ea580c',
-              '#6b7280'
-            ],
-            'line-width': 1.5
-          }
-        });
-
-        // Field label layer
-        map.addLayer({
-          id: 'fields-labels',
-          type: 'symbol',
-          source: 'fields',
-          layout: {
-            'text-field': ['get', 'field_id'],
-            'text-size': 11,
-            'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-            'text-anchor': 'center'
-          },
-          paint: {
-            'text-color': '#ffffff',
-            'text-halo-color': 'rgba(0,0,0,0.4)',
-            'text-halo-width': 1
-          }
-        });
-
-        // Hover state
-        let hoveredId = null;
-        map.on('mousemove', 'fields-fill', e => {
-          map.getCanvas().style.cursor = 'pointer';
-          if (hoveredId !== null) map.setFeatureState({ source: 'fields', id: hoveredId }, { hover: false });
-          hoveredId = e.features[0].id;
-          map.setFeatureState({ source: 'fields', id: hoveredId }, { hover: true });
-        });
-        map.on('mouseleave', 'fields-fill', () => {
-          map.getCanvas().style.cursor = '';
-          if (hoveredId !== null) map.setFeatureState({ source: 'fields', id: hoveredId }, { hover: false });
-          hoveredId = null;
-        });
-
-        // Click popup
-        const popup = new mapboxgl.Popup({ closeButton: true, maxWidth: '260px' });
-        map.on('click', 'fields-fill', e => {
-          const p = e.features[0].properties;
-          const statusLabel = { on_track: 'On Track', ahead: 'Ahead', delayed: 'Delayed', no_data: 'No Data' }[p.status] || 'No Data';
-          const statusColor = { on_track: '#dcfce7', ahead: '#dbeafe', delayed: '#ffedd5', no_data: '#f3f4f6' }[p.status] || '#f3f4f6';
-          const statusText  = { on_track: '#15803d', ahead: '#1d4ed8', delayed: '#c2410c', no_data: '#6b7280' }[p.status] || '#6b7280';
-
-          const html = p.has_data ? `
-            <div style="padding:14px 16px;border-bottom:1px solid #f3f4f6">
-              <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
-                <div>
-                  <p style="font-weight:700;font-size:15px;color:#1f2937;margin:0">${p.field_id}</p>
-                  <p style="font-size:12px;color:#6b7280;margin:2px 0 0">${p.farm} &middot; ${p.acreage} ac</p>
-                </div>
-                <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:${statusColor};color:${statusText};white-space:nowrap">${statusLabel}</span>
-              </div>
-            </div>
-            <div style="padding:12px 16px;font-size:13px;color:#374151;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              <div><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">GDD</p><p style="font-weight:600;margin:0">${p.gdd}</p></div>
-              <div><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">Stage</p><p style="font-weight:600;margin:0">${p.stage}</p></div>
-              <div><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">Next</p><p style="font-weight:600;margin:0">${p.next_stage}</p></div>
-              <div><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">GDD to Next</p><p style="font-weight:600;margin:0">${p.gdd_to_next}</p></div>
-              <div style="grid-column:span 2"><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">Hybrid</p><p style="font-weight:600;margin:0">${p.product}</p></div>
-              <div style="grid-column:span 2"><p style="color:#9ca3af;font-size:11px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.05em">Planted</p><p style="font-weight:600;margin:0">${p.planted_on}</p></div>
-            </div>
-          ` : `
-            <div style="padding:14px 16px">
-              <p style="font-weight:700;font-size:15px;color:#1f2937;margin:0 0 2px">${p.field_id}</p>
-              <p style="font-size:12px;color:#6b7280;margin:0">${p.farm} &middot; ${p.acreage} ac</p>
-              <p style="font-size:12px;color:#9ca3af;margin:10px 0 0">No planting data this season</p>
-            </div>
-          `;
-
-          popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
-        });
-
-        // Auto-fit to field bounds
         const bounds = new mapboxgl.LngLatBounds();
-        geojson.features.forEach(f => {
-          f.geometry.coordinates[0].forEach(c => bounds.extend(c));
-        });
+        geojson.features.forEach(f => f.geometry.coordinates[0].forEach(c => bounds.extend(c)));
         map.fitBounds(bounds, { padding: 40, duration: 1000 });
       });
   });
 
-  // Map style switcher
+  // Re-add layers after style change (setStyle wipes all sources/layers)
   document.getElementById('map-style-select').addEventListener('change', function() {
     map.setStyle(this.value);
-    map.once('style.load', () => map.triggerRepaint());
+    map.once('style.load', addFieldLayers);
   });
 </script>
