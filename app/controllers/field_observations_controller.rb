@@ -1,5 +1,6 @@
 class FieldObservationsController < ApplicationController
   layout "dashboard"
+  before_action :require_admin!
 
   def create
     @field = Field.find(params[:field_id])

@@ -1,6 +1,7 @@
 class PlantingEventsController < ApplicationController
   layout "dashboard"
   before_action :set_event, only: [:show, :edit, :update, :destroy]
+  before_action :require_admin!, only: [:new, :create, :edit, :update, :destroy]
 
   def index
     @events = PlantingEvent.includes(field: :location).joins(:field).order("fields.name")

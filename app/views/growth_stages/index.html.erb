@@ -4,9 +4,11 @@
       <h1 class="text-xl font-bold text-[#1F2937]">Growth Stages</h1>
       <p class="text-sm text-[#6B7280] mt-0.5">Define GDD thresholds for each crop growth stage</p>
     </div>
+    <% if current_user.admin? %>
     <%= link_to new_growth_stage_path, class: "flex items-center gap-2 px-4 py-2 bg-[#166534] text-white text-sm font-semibold rounded-xl hover:bg-[#14532d] transition" do %>
       <i class="fa-solid fa-plus text-xs"></i>
       New Stage
+    <% end %>
     <% end %>
   </header>
 
@@ -45,6 +47,7 @@
                 </span>
               </td>
               <td class="py-2 px-4 text-xs text-[#6B7280] max-w-xs truncate"><%= stage.description.presence || "—" %></td>
+              <% if current_user.admin? %>
               <td class="py-2 px-4 text-right">
                 <div class="flex items-center justify-end gap-2">
                   <%= link_to edit_growth_stage_path(stage), class: "px-3 py-1 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 hover:bg-gray-100 transition border border-gray-200" do %>
@@ -55,6 +58,7 @@
                   <% end %>
                 </div>
               </td>
+              <% end %>
             </tr>
           <% end %>
           <% if @stages.empty? %>

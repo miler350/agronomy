@@ -1,6 +1,7 @@
 class FieldsController < ApplicationController
   layout "dashboard"
   before_action :set_field, only: [:show, :edit, :update, :destroy]
+  before_action :require_admin!, only: [:new, :create, :edit, :update, :destroy]
 
   def index
     @fields = Field.includes(:location, :planting_events).order(:name)

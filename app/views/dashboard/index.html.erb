@@ -352,10 +352,12 @@
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-right">
+                  <% if current_user.admin? %>
                   <button onclick="openObsDrawer(<%= pe.field.id %>, '<%= j pe.field.name %>')"
                           class="px-2.5 py-1 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap border border-green-200">
                     + Observation
                   </button>
+                  <% end %>
                 </td>
               </tr>
             <% end %>

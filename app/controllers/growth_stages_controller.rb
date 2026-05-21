@@ -1,6 +1,7 @@
 class GrowthStagesController < ApplicationController
   layout "dashboard"
   before_action :set_stage, only: [:edit, :update, :destroy]
+  before_action :require_admin!, only: [:new, :create, :edit, :update, :destroy]
 
   def index
     @stages = GrowthStage.order(:position)

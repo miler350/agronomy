@@ -25,6 +25,7 @@
 <% end %>
 
 <%# ─── Observation Drawer ──────────────────────────────────────────────── %>
+<% if current_user.admin? %>
 <div id="obs-drawer">
   <div id="obs-backdrop" onclick="closeDrawer()"></div>
   <div id="obs-panel">
@@ -87,6 +88,7 @@
     <% end %>
   </div>
 </div>
+<% end %>
 
 <%# ─── Main layout ────────────────────────────────────────────────────── %>
 <div class="flex flex-col h-full overflow-y-auto">
@@ -99,12 +101,14 @@
       <h1 class="text-xl font-bold text-[#1F2937]"><%= @field.name %></h1>
       <p class="text-sm text-[#6B7280] mt-0.5"><%= @field.location.name %></p>
     </div>
+    <% if current_user.admin? %>
     <button onclick="openDrawer()"
             class="px-4 py-2 text-sm font-semibold bg-[#166534] text-white rounded-xl hover:bg-[#14532d] transition flex items-center gap-2">
       <i class="fa-solid fa-plus text-xs"></i> Log Observation
     </button>
     <%= link_to edit_field_path(@field), class: "px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition" do %>
       <i class="fa-solid fa-pencil mr-1.5"></i> Edit
+    <% end %>
     <% end %>
   </header>
 
@@ -198,10 +202,12 @@
                   <%= obs.notes.presence || "—" %>
                 </td>
                 <td class="px-4 py-3 text-right">
+                  <% if current_user.admin? %>
                   <%= link_to field_field_observation_path(@field, obs),
                         data: { turbo_method: :delete, turbo_confirm: "Delete this observation?" },
                         class: "text-xs text-red-500 hover:text-red-700 transition" do %>
                     <i class="fa-solid fa-trash"></i>
+                  <% end %>
                   <% end %>
                 </td>
               </tr>
@@ -212,9 +218,11 @@
         <div class="py-12 text-center">
           <i class="fa-solid fa-clipboard text-2xl text-gray-200 mb-3 block"></i>
           <p class="text-sm text-gray-400">No observations yet.</p>
+          <% if current_user.admin? %>
           <button onclick="openDrawer()" class="mt-3 text-sm text-[#166534] font-medium hover:underline">
             Log the first one
           </button>
+          <% end %>
         </div>
       <% end %>
     </div>

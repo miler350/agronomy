@@ -1,6 +1,7 @@
 class LocationsController < ApplicationController
   layout "dashboard"
   before_action :set_location, only: [:show, :edit, :update, :destroy]
+  before_action :require_admin!, only: [:new, :create, :edit, :update, :destroy]
 
   def index
     @locations = Location.includes(:fields).order(:name)
