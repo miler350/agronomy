@@ -70,10 +70,14 @@
   <aside id="sidebar" class="hidden lg:flex bg-white border-r border-gray-200 flex-shrink-0 flex-col h-screen sticky top-0 z-40 shadow-soft overflow-hidden">
 
     <div class="brand-area p-5 flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-[#FFDA77] flex items-center justify-center text-brand-brown font-bold flex-shrink-0">
-        <i class="fa-solid fa-leaf text-sm"></i>
-      </div>
-      <span class="brand-name text-xl font-bold text-brand-dark tracking-tight whitespace-nowrap">Agronomy</span>
+      <% if File.exist?(Rails.root.join("public", "logo.png")) %>
+        <img src="/logo.png" alt="Logo" class="h-8 w-auto flex-shrink-0 rounded">
+      <% else %>
+        <div class="w-8 h-8 rounded-lg bg-[#FFDA77] flex items-center justify-center text-brand-brown font-bold flex-shrink-0">
+          <i class="fa-solid fa-leaf text-sm"></i>
+        </div>
+      <% end %>
+      <span class="brand-name text-xl font-bold text-brand-dark tracking-tight whitespace-nowrap">Cedar Springs</span>
     </div>
 
     <button onclick="toggleSidebar()" class="mx-3 mb-2 p-2 rounded-lg text-brand-muted hover:bg-gray-50 hover:text-brand-dark flex items-center justify-center transition-colors">
@@ -93,6 +97,7 @@
         <i class="fa-solid fa-location-dot w-5 text-center flex-shrink-0"></i>
         <span class="nav-label whitespace-nowrap">Locations</span>
       <% end %>
+      <% if current_user.admin? %>
       <%= link_to fields_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'fields' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
         <i class="fa-solid fa-wheat-awn w-5 text-center flex-shrink-0"></i>
         <span class="nav-label whitespace-nowrap">Fields</span>
@@ -100,6 +105,7 @@
       <%= link_to growth_stages_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'growth_stages' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
         <i class="fa-solid fa-seedling w-5 text-center flex-shrink-0"></i>
         <span class="nav-label whitespace-nowrap">Growth Stages</span>
+      <% end %>
       <% end %>
       <%= link_to weather_data_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'weather_data' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
         <i class="fa-solid fa-cloud-sun w-5 text-center flex-shrink-0"></i>
@@ -140,10 +146,14 @@
     <div id="mobile-nav-panel" class="absolute left-0 top-0 h-full w-72 bg-white shadow-xl flex flex-col -translate-x-full">
       <div class="p-5 flex items-center justify-between border-b border-gray-100">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-[#FFDA77] flex items-center justify-center text-brand-brown font-bold">
-            <i class="fa-solid fa-leaf text-sm"></i>
-          </div>
-          <span class="text-xl font-bold text-brand-dark">Agronomy</span>
+          <% if File.exist?(Rails.root.join("public", "logo.png")) %>
+            <img src="/logo.png" alt="Logo" class="h-7 w-auto rounded">
+          <% else %>
+            <div class="w-8 h-8 rounded-lg bg-[#FFDA77] flex items-center justify-center text-brand-brown font-bold">
+              <i class="fa-solid fa-leaf text-sm"></i>
+            </div>
+          <% end %>
+          <span class="text-xl font-bold text-brand-dark">Cedar Springs</span>
         </div>
         <button onclick="closeMobileNav()" class="p-1 text-gray-400 hover:text-gray-600">
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -162,6 +172,7 @@
           <i class="fa-solid fa-location-dot w-5 text-center flex-shrink-0"></i>
           <span class="whitespace-nowrap">Locations</span>
         <% end %>
+        <% if current_user.admin? %>
         <%= link_to fields_path, onclick: "closeMobileNav()", class: "flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'fields' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
           <i class="fa-solid fa-wheat-awn w-5 text-center flex-shrink-0"></i>
           <span class="whitespace-nowrap">Fields</span>
@@ -169,6 +180,7 @@
         <%= link_to growth_stages_path, onclick: "closeMobileNav()", class: "flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'growth_stages' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
           <i class="fa-solid fa-seedling w-5 text-center flex-shrink-0"></i>
           <span class="whitespace-nowrap">Growth Stages</span>
+        <% end %>
         <% end %>
         <%= link_to weather_data_path, onclick: "closeMobileNav()", class: "flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'weather_data' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
           <i class="fa-solid fa-cloud-sun w-5 text-center flex-shrink-0"></i>
@@ -230,10 +242,14 @@
     <!-- Mobile top bar -->
     <div class="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30 flex-shrink-0">
       <div class="flex items-center gap-2.5">
-        <div class="w-7 h-7 rounded-lg bg-[#FFDA77] flex items-center justify-center text-brand-brown">
-          <i class="fa-solid fa-leaf text-xs"></i>
-        </div>
-        <span class="text-base font-bold text-brand-dark">Agronomy</span>
+        <% if File.exist?(Rails.root.join("public", "logo.png")) %>
+          <img src="/logo.png" alt="Logo" class="h-6 w-auto rounded">
+        <% else %>
+          <div class="w-7 h-7 rounded-lg bg-[#FFDA77] flex items-center justify-center text-brand-brown">
+            <i class="fa-solid fa-leaf text-xs"></i>
+          </div>
+        <% end %>
+        <span class="text-base font-bold text-brand-dark">Cedar Springs</span>
       </div>
       <button onclick="openMobileNav()" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
         <i class="fa-solid fa-bars text-lg"></i>

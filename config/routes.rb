@@ -1,11 +1,13 @@
 Rails.application.routes.draw do
   devise_for :users
   root "dashboard#index"
+  get "dashboard/export", to: "dashboard#export", as: :dashboard_export
   get "up" => "rails/health#show", as: :rails_health_check
 
   resources :locations
+  get "fields.geojson", to: "fields#geojson_collection"
   resources :fields do
-    resources :field_observations, only: [:create, :destroy]
+    resources :field_observations, only: [:create, :update, :destroy]
   end
   resources :growth_stages
   resources :planting_events

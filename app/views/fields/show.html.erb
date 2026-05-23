@@ -24,14 +24,14 @@
   </style>
 <% end %>
 
-<%# ─── Observation Drawer ──────────────────────────────────────────────── %>
+<%# ─── Observation Drawer (create + edit) ─────────────────────────────── %>
 <% if current_user.admin? %>
 <div id="obs-drawer">
   <div id="obs-backdrop" onclick="closeDrawer()"></div>
   <div id="obs-panel">
     <div class="p-6 border-b border-gray-100 flex items-center justify-between">
       <div>
-        <h2 class="text-base font-bold text-[#1F2937]">Log Observation</h2>
+        <h2 id="drawer-title" class="text-base font-bold text-[#1F2937]">Log Observation</h2>
         <p class="text-xs text-gray-500 mt-0.5"><%= @field.name %></p>
       </div>
       <button onclick="closeDrawer()" class="text-gray-400 hover:text-gray-600 transition">
@@ -39,10 +39,13 @@
       </button>
     </div>
 
-    <%= form_with url: field_field_observations_path(@field), method: :post, class: "p-6 space-y-5" do |f| %>
+    <form id="obs-form" method="post" class="p-6 space-y-5" data-turbo="false">
+      <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+      <input type="hidden" name="_method" id="obs-method" value="">
+
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1.5">Date Observed</label>
-        <input type="date" name="field_observation[observed_on]"
+        <input type="date" name="field_observation[observed_on]" id="obs-date"
                value="<%= Date.current %>"
                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
       </div>
@@ -50,30 +53,23 @@
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1.5">Growth Stage Observed</label>
         <select name="field_observation[growth_stage_id]" id="stage-select"
-                onchange="prefillGdd(this)"
                 class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] bg-white">
           <option value="">— Select stage —</option>
           <% @growth_stages.each do |stage| %>
-            <option value="<%= stage.id %>" data-gdd="<%= stage.gdd_threshold.to_f.round %>">
-              <%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD)
+            <option value="<%= stage.id %>">
+              <%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD threshold)
             </option>
           <% end %>
         </select>
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1.5">Observed GDD</label>
-        <input type="number" name="field_observation[observed_gdd]" id="gdd-input"
-               step="0.1" placeholder="e.g. 850"
-               class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
-        <p class="text-xs text-gray-400 mt-1">Pre-filled from stage threshold — override if your field differs.</p>
-      </div>
-
-      <div>
         <label class="block text-xs font-medium text-gray-600 mb-1.5">Notes <span class="text-gray-400 font-normal">(optional)</span></label>
-        <textarea name="field_observation[notes]" rows="3" placeholder="Field conditions, pest pressure, etc."
+        <textarea name="field_observation[notes]" id="obs-notes" rows="3" placeholder="Field conditions, pest pressure, etc."
                   class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] resize-none"></textarea>
       </div>
+
+      <p class="text-xs text-gray-400">GDD is auto-calculated from planting date to observation date using weather data.</p>
 
       <div class="flex gap-3 pt-2">
         <button type="submit"
@@ -85,7 +81,7 @@
           Cancel
         </button>
       </div>
-    <% end %>
+    </form>
   </div>
 </div>
 <% end %>
@@ -99,7 +95,7 @@
     <% end %>
     <div class="flex-1">
       <h1 class="text-xl font-bold text-[#1F2937]"><%= @field.name %></h1>
-      <p class="text-sm text-[#6B7280] mt-0.5"><%= @field.location.name %></p>
+      <p class="text-sm text-[#6B7280] mt-0.5"><%= @field.location.name %><%= " · #{@field.farm}" if @field.farm.present? %></p>
     </div>
     <% if current_user.admin? %>
     <button onclick="openDrawer()"
@@ -121,7 +117,7 @@
 
     <%# GDD stat cards %>
     <% if @gdd_result %>
-    <% status_colors = { on_track: ["#dcfce7","#15803d"], ahead: ["#dbeafe","#1d4ed8"], delayed: ["#ffedd5","#c2410c"] } %>
+    <% status_colors = { on_track: ["#fef9c3","#854d0e"], ahead: ["#dcfce7","#15803d"], delayed: ["#fee2e2","#b91c1c"] } %>
     <% bg, fg = status_colors[@gdd_result.status] || ["#f3f4f6","#6b7280"] %>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
@@ -201,12 +197,17 @@
                 <td class="px-4 py-3 text-sm text-[#6B7280] max-w-xs truncate">
                   <%= obs.notes.presence || "—" %>
                 </td>
-                <td class="px-4 py-3 text-right">
+                <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
                   <% if current_user.admin? %>
-                  <%= link_to field_field_observation_path(@field, obs),
-                        data: { turbo_method: :delete, turbo_confirm: "Delete this observation?" },
-                        class: "text-xs text-red-500 hover:text-red-700 transition" do %>
-                    <i class="fa-solid fa-trash"></i>
+                  <button onclick="openEditDrawer(<%= obs.id %>, '<%= j obs.observed_on.strftime('%Y-%m-%d') %>', '<%= obs.growth_stage_id %>', '<%= j obs.notes.to_s %>')"
+                          class="text-xs text-blue-500 hover:text-blue-700 transition">
+                    <i class="fa-solid fa-pencil"></i>
+                  </button>
+                  <%= form_with url: field_field_observation_path(@field, obs), method: :delete, data: { turbo: false }, style: "display:inline;" do %>
+                    <button type="submit" onclick="return confirm('Delete this observation?')"
+                            class="text-xs text-red-500 hover:text-red-700 transition">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
                   <% end %>
                   <% end %>
                 </td>
@@ -231,13 +232,28 @@
 </div>
 
 <script>
-  // ── Observation Drawer (defined first — no external deps) ───────────────
-  function openDrawer()  { document.getElementById('obs-drawer').classList.add('open'); }
-  function closeDrawer() { document.getElementById('obs-drawer').classList.remove('open'); }
-  function prefillGdd(select) {
-    const gdd = select.options[select.selectedIndex]?.dataset?.gdd;
-    if (gdd) document.getElementById('gdd-input').value = gdd;
+  // ── Observation Drawer ───────────────────────────────────────────────────
+  function openDrawer() {
+    document.getElementById('drawer-title').textContent = 'Log Observation';
+    document.getElementById('obs-form').action = '<%= field_field_observations_path(@field) %>';
+    document.getElementById('obs-method').value = '';
+    document.getElementById('obs-date').value = '<%= Date.current %>';
+    document.getElementById('stage-select').value = '';
+    document.getElementById('obs-notes').value = '';
+    document.getElementById('obs-drawer').classList.add('open');
   }
+
+  function openEditDrawer(obsId, date, stageId, notes) {
+    document.getElementById('drawer-title').textContent = 'Edit Observation';
+    document.getElementById('obs-form').action = '<%= field_field_observations_path(@field) %>/' + obsId;
+    document.getElementById('obs-method').value = 'patch';
+    document.getElementById('obs-date').value = date;
+    document.getElementById('stage-select').value = stageId;
+    document.getElementById('obs-notes').value = notes;
+    document.getElementById('obs-drawer').classList.add('open');
+  }
+
+  function closeDrawer() { document.getElementById('obs-drawer').classList.remove('open'); }
 
   // ── Mapbox ──────────────────────────────────────────────────────────────
   try {
@@ -253,7 +269,7 @@
       fetch('/fields.geojson')
         .then(r => r.json())
         .then(geojson => {
-          const feature = geojson.features.find(f => f.properties.field_id === '<%= @field.name %>');
+          const feature = geojson.features.find(f => f.properties.field_id === '<%= j @field.name %>');
           if (!feature) return;
           const singleFeature = { type: 'FeatureCollection', features: [feature] };
           map.addSource('field', { type: 'geojson', data: singleFeature });
@@ -261,8 +277,13 @@
             paint: { 'fill-color': '#16a34a', 'fill-opacity': 0.35 } });
           map.addLayer({ id: 'field-outline', type: 'line', source: 'field',
             paint: { 'line-color': '#15803d', 'line-width': 2 } });
+
+          const geom = feature.geometry;
           const bounds = new mapboxgl.LngLatBounds();
-          feature.geometry.coordinates[0].forEach(c => bounds.extend(c));
+          const rings = geom.type === 'MultiPolygon'
+            ? geom.coordinates.flatMap(poly => poly)
+            : geom.coordinates;
+          rings[0].forEach(c => bounds.extend(c));
           map.fitBounds(bounds, { padding: 40, duration: 800 });
         });
     });

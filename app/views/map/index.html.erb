@@ -50,9 +50,9 @@
     <div class="map-legend">
       <p class="font-semibold text-gray-700 mb-2 text-xs uppercase tracking-wider">Status</p>
       <div class="space-y-1.5">
-        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm" style="background:#16a34a"></span><span class="text-gray-600">On Track</span></div>
-        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm" style="background:#3b82f6"></span><span class="text-gray-600">Ahead</span></div>
-        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm" style="background:#f97316"></span><span class="text-gray-600">Delayed</span></div>
+        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm" style="background:#16a34a"></span><span class="text-gray-600">Ahead</span></div>
+        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm" style="background:#eab308"></span><span class="text-gray-600">On Track</span></div>
+        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm" style="background:#dc2626"></span><span class="text-gray-600">Delayed</span></div>
         <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-gray-300"></span><span class="text-gray-600">No data</span></div>
       </div>
     </div>
@@ -65,9 +65,9 @@
   const fieldData = <%= raw @field_data_json %>;
 
   const statusColor = {
-    on_track: '#16a34a',
-    ahead:    '#3b82f6',
-    delayed:  '#f97316',
+    on_track: '#eab308',
+    ahead:    '#16a34a',
+    delayed:  '#dc2626',
     no_data:  '#9ca3af'
   };
 
@@ -93,7 +93,7 @@
     map.addLayer({
       id: 'fields-fill', type: 'fill', source: 'fields',
       paint: {
-        'fill-color': ['match', ['get', 'status'], 'on_track', '#16a34a', 'ahead', '#3b82f6', 'delayed', '#f97316', '#9ca3af'],
+        'fill-color': ['match', ['get', 'status'], 'on_track', '#eab308', 'ahead', '#16a34a', 'delayed', '#dc2626', '#9ca3af'],
         'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.75, 0.45]
       }
     });
@@ -101,7 +101,7 @@
     map.addLayer({
       id: 'fields-outline', type: 'line', source: 'fields',
       paint: {
-        'line-color': ['match', ['get', 'status'], 'on_track', '#15803d', 'ahead', '#2563eb', 'delayed', '#ea580c', '#6b7280'],
+        'line-color': ['match', ['get', 'status'], 'on_track', '#ca8a04', 'ahead', '#15803d', 'delayed', '#b91c1c', '#6b7280'],
         'line-width': 1.5
       }
     });
@@ -132,8 +132,8 @@
     map.on('click', 'fields-fill', e => {
       const p = e.features[0].properties;
       const statusLabel = { on_track: 'On Track', ahead: 'Ahead', delayed: 'Delayed', no_data: 'No Data' }[p.status] || 'No Data';
-      const sBg = { on_track: '#dcfce7', ahead: '#dbeafe', delayed: '#ffedd5', no_data: '#f3f4f6' }[p.status] || '#f3f4f6';
-      const sFg = { on_track: '#15803d', ahead: '#1d4ed8', delayed: '#c2410c', no_data: '#6b7280' }[p.status] || '#6b7280';
+      const sBg = { on_track: '#fef9c3', ahead: '#dcfce7', delayed: '#fee2e2', no_data: '#f3f4f6' }[p.status] || '#f3f4f6';
+      const sFg = { on_track: '#854d0e', ahead: '#15803d', delayed: '#b91c1c', no_data: '#6b7280' }[p.status] || '#6b7280';
 
       const html = p.has_data ? `
         <div style="padding:14px 16px;border-bottom:1px solid #f3f4f6">
@@ -177,7 +177,13 @@
         addFieldLayers();
 
         const bounds = new mapboxgl.LngLatBounds();
-        geojson.features.forEach(f => f.geometry.coordinates[0].forEach(c => bounds.extend(c)));
+        geojson.features.forEach(f => {
+          const geom = f.geometry;
+          const rings = geom.type === 'MultiPolygon'
+            ? geom.coordinates.flatMap(poly => poly)
+            : geom.coordinates;
+          rings[0].forEach(c => bounds.extend(c));
+        });
         map.fitBounds(bounds, { padding: 40, duration: 1000 });
       });
   });

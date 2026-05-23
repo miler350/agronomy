@@ -1,3 +1,51 @@
+<%= content_for :head do %>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var sortCol = null, sortDir = 'asc';
+
+      window.applyDDTable = function() {
+        var rows  = Array.from(document.querySelectorAll('.dd-row'));
+        var tbody = rows[0] && rows[0].parentNode;
+        if (!tbody) return;
+
+        var search       = (document.getElementById('dd-search')?.value || '').toLowerCase();
+        var filterStatus = document.getElementById('dd-filter-status')?.value || '';
+        var filterStage  = document.getElementById('dd-filter-stage')?.value  || '';
+
+        rows.forEach(function(row) {
+          var name = (row.dataset.field || '').toLowerCase();
+          var show = (!search || name.includes(search)) &&
+                     (!filterStatus || row.dataset.status === filterStatus) &&
+                     (!filterStage  || row.dataset.stage  === filterStage);
+          row.style.display = show ? '' : 'none';
+        });
+
+        if (sortCol) {
+          rows.slice().sort(function(a, b) {
+            var va = a.dataset[sortCol] || '', vb = b.dataset[sortCol] || '';
+            return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+          }).forEach(function(r) { tbody.appendChild(r); });
+        }
+      };
+
+      window.setDDSort = function(col) {
+        sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
+        sortCol = col;
+        ['planted', 'predicted'].forEach(function(c) {
+          var el = document.getElementById('dd-sort-' + c);
+          if (!el) return;
+          el.textContent = sortCol === c ? (sortDir === 'asc' ? '↑' : '↓') : '↕';
+          el.style.color  = sortCol === c ? '#166534' : '';
+        });
+        applyDDTable();
+      };
+
+      var searchInput = document.getElementById('dd-search');
+      if (searchInput) searchInput.addEventListener('input', applyDDTable);
+    });
+  </script>
+<% end %>
+
 <div class="flex flex-col h-full">
   <header class="px-8 py-5 bg-white border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
     <div>
@@ -10,7 +58,28 @@
     </span>
   </header>
 
-  <div class="p-8 space-y-6 overflow-y-auto flex-1">
+  <div class="p-8 space-y-4 overflow-y-auto flex-1">
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center gap-3">
+      <input id="dd-search" type="text" placeholder="Search field…"
+             class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-[#6B7280] bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a] w-40">
+      <select id="dd-filter-status" onchange="applyDDTable()"
+              class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-[#6B7280] bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+        <option value="">All Statuses</option>
+        <option value="on_track">On Track</option>
+        <option value="ahead">Ahead</option>
+        <option value="delayed">Delayed</option>
+      </select>
+      <select id="dd-filter-stage" onchange="applyDDTable()"
+              class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-[#6B7280] bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+        <option value="">All Stages</option>
+        <% @growth_stages.each do |stage| %>
+          <option value="<%= stage.name.gsub(/\(.*?\)/, '').strip %>"><%= stage.name.gsub(/\(.*?\)/, '').strip %></option>
+        <% end %>
+      </select>
+    </div>
+
     <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse min-w-[1000px]">
@@ -18,13 +87,13 @@
             <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
               <th class="pb-3 pt-4 px-6 font-medium">Field</th>
               <th class="pb-3 pt-4 px-4 font-medium">Location</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Planted</th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('planted')">Planted <span id="dd-sort-planted" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 pt-4 px-4 font-medium">Product</th>
               <th class="pb-3 pt-4 px-4 font-medium">Current GDD</th>
               <th class="pb-3 pt-4 px-4 font-medium">Stage</th>
               <th class="pb-3 pt-4 px-4 font-medium">Next Stage</th>
               <th class="pb-3 pt-4 px-4 font-medium">GDD to Next</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Predicted Date</th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('predicted')">Predicted Date <span id="dd-sort-predicted" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 pt-4 px-4 font-medium">Status</th>
             </tr>
           </thead>
@@ -35,13 +104,18 @@
               <% stage_short = result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
               <% next_short  = result.next_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
               <% pct = [[result.calibrated_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
-              <tr class="hover:bg-gray-50/50 transition-colors">
+              <tr class="hover:bg-gray-50/50 transition-colors dd-row"
+                  data-field="<%= pe.field.name.downcase %>"
+                  data-status="<%= result.status %>"
+                  data-stage="<%= stage_short %>"
+                  data-planted="<%= pe.planted_on %>"
+                  data-predicted="<%= result.predicted_next_date || '' %>">
                 <td class="py-2 px-6">
                   <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-[8px] bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
                       <i class="fa-solid fa-wheat-awn text-xs"></i>
                     </div>
-                    <span class="text-sm font-semibold text-[#1F2937]"><%= pe.field.name %></span>
+                    <%= link_to pe.field.name, field_path(pe.field), class: "text-sm font-semibold text-[#1F2937] hover:text-[#166534] transition-colors" %>
                   </div>
                 </td>
                 <td class="py-2 px-4 text-xs text-[#6B7280]"><%= pe.field.location.name %></td>
@@ -76,9 +150,9 @@
                 </td>
                 <td class="py-2 px-4">
                   <% status_styles = {
-                    on_track: "bg-green-50 text-green-700 border-green-200",
-                    ahead:    "bg-blue-50 text-blue-700 border-blue-200",
-                    delayed:  "bg-orange-50 text-orange-700 border-orange-200"
+                    on_track: "bg-yellow-50 text-yellow-700 border-yellow-200",
+                    ahead:    "bg-green-50 text-green-700 border-green-200",
+                    delayed:  "bg-red-50 text-red-700 border-red-200"
                   } %>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border <%= status_styles[result.status] %>">
                     <%= result.status.to_s.tr("_", " ").capitalize %>

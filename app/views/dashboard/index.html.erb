@@ -10,7 +10,7 @@
       <button onclick="closeObsDrawer()" style="color:#9ca3af;background:none;border:none;cursor:pointer;font-size:18px;">&#x2715;</button>
     </div>
 
-    <form id="obs-form" method="post" style="padding:24px;" data-turbo="true">
+    <form id="obs-form" method="post" style="padding:24px;" data-turbo="false">
       <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
 
       <div style="margin-bottom:16px;">
@@ -21,22 +21,15 @@
 
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:12px;font-weight:500;color:#4b5563;margin-bottom:6px;">Growth Stage Observed</label>
-        <select name="field_observation[growth_stage_id]" id="obs-stage" onchange="obsPrefilGdd(this)"
+        <select name="field_observation[growth_stage_id]" id="obs-stage"
                 style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;background:white;">
           <option value="">— Select stage —</option>
           <% @growth_stages.each do |stage| %>
-            <option value="<%= stage.id %>" data-gdd="<%= stage.gdd_threshold.to_f.round %>">
-              <%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD)
+            <option value="<%= stage.id %>">
+              <%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD threshold)
             </option>
           <% end %>
         </select>
-      </div>
-
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:12px;font-weight:500;color:#4b5563;margin-bottom:6px;">Observed GDD</label>
-        <input type="number" name="field_observation[observed_gdd]" id="obs-gdd" step="0.1" placeholder="e.g. 850"
-               style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;">
-        <p style="font-size:11px;color:#9ca3af;margin:4px 0 0;">Pre-filled from stage — override if your field differs.</p>
       </div>
 
       <div style="margin-bottom:20px;">
@@ -44,6 +37,8 @@
         <textarea name="field_observation[notes]" rows="3" placeholder="Field conditions, pest pressure, etc."
                   style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;resize:none;"></textarea>
       </div>
+
+      <p style="font-size:11px;color:#9ca3af;margin:-10px 0 16px;">GDD will be auto-calculated from planting date to the observed date using weather data.</p>
 
       <div style="display:flex;gap:10px;">
         <button type="submit"
@@ -65,7 +60,6 @@
     document.getElementById('obs-form').action = '/fields/' + fieldId + '/field_observations';
     document.getElementById('obs-date').value = '<%= Date.current %>';
     document.getElementById('obs-stage').value = '';
-    document.getElementById('obs-gdd').value = '';
     var drawer = document.getElementById('obs-drawer');
     drawer.style.visibility = 'visible';
     setTimeout(function() {
@@ -79,10 +73,6 @@
     setTimeout(function() {
       document.getElementById('obs-drawer').style.visibility = 'hidden';
     }, 260);
-  }
-  function obsPrefilGdd(select) {
-    var gdd = select.options[select.selectedIndex] && select.options[select.selectedIndex].dataset.gdd;
-    if (gdd) document.getElementById('obs-gdd').value = gdd;
   }
 </script>
 
@@ -181,13 +171,13 @@
   <!-- Header -->
   <header class="w-full px-4 sm:px-8 py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 z-10 glass-panel border-b border-white/40 sticky top-0">
     <div>
-      <h1 class="text-2xl font-bold text-brand-brown">Farm Field Overview</h1>
+      <h1 class="text-2xl font-bold text-brand-brown">Operation Overview</h1>
       <p class="text-sm text-brand-muted mt-1">Cumulative Growing Degree Days (GDD) &middot; Last synced: <%= @last_synced&.in_time_zone("Eastern Time (US & Canada)")&.strftime("%b %-d, %-I:%M %p ET") %></p>
     </div>
     <div class="flex items-center gap-4 w-full sm:w-auto">
-      <button class="px-5 py-2.5 rounded-full bg-brand-brown text-white text-sm font-medium hover:bg-[#3A2D25] transition-colors shadow-md flex-shrink-0">
+      <%= link_to dashboard_export_path(format: :csv), class: "px-5 py-2.5 rounded-full bg-brand-brown text-white text-sm font-medium hover:bg-[#3A2D25] transition-colors shadow-md flex-shrink-0" do %>
         Export Data
-      </button>
+      <% end %>
     </div>
   </header>
 
@@ -200,11 +190,14 @@
       <section class="col-span-1 lg:col-span-2 bg-white rounded-[24px] p-6 shadow-card border border-gray-100">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-lg font-semibold text-brand-dark"><%= @weather_location&.name || "Weather" %> Forecast</h2>
-          <%= form_tag root_path, method: :get, class: "inline" do %>
+          <%= form_tag root_path, method: :get, class: "inline flex items-center gap-2" do %>
             <%= select_tag :location_id,
                 options_from_collection_for_select(@locations, :id, :name, @weather_location&.id),
                 onchange: "this.form.submit()",
                 class: "text-sm text-brand-muted border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#FFDA77] bg-white cursor-pointer" %>
+            <% if params[:forecast_days].present? %>
+              <input type="hidden" name="forecast_days" value="<%= @forecast_days %>">
+            <% end %>
           <% end %>
         </div>
         <% r = @today_reading %>
@@ -245,7 +238,17 @@
       <section class="col-span-1 bg-gradient-to-br from-[#166534] to-[#15803d] rounded-[24px] p-6 shadow-card relative overflow-hidden text-white">
         <div class="flex justify-between items-center mb-4 relative z-10">
           <h2 class="text-lg font-semibold">GDD Forecast</h2>
-          <span class="text-xs bg-white/20 px-2 py-1 rounded-md font-medium">Next 14 Days</span>
+          <%= form_tag root_path, method: :get, class: "inline" do %>
+            <% if params[:location_id].present? %>
+              <input type="hidden" name="location_id" value="<%= @weather_location&.id %>">
+            <% end %>
+            <select name="forecast_days" onchange="this.form.submit()"
+                    class="text-xs bg-white/20 px-2 py-1 rounded-md font-medium text-white border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-white/50">
+              <option value="3"  <%= @forecast_days == 3  ? 'selected' : '' %>>Next 3 Days</option>
+              <option value="7"  <%= @forecast_days == 7  ? 'selected' : '' %>>Next 7 Days</option>
+              <option value="14" <%= @forecast_days == 14 ? 'selected' : '' %>>Next 14 Days</option>
+            </select>
+          <% end %>
         </div>
         <div class="relative z-10">
           <div class="flex items-baseline gap-2 mb-1">
@@ -254,7 +257,7 @@
           </div>
           <p class="text-sm opacity-90 mb-4">
             <% if @forecast_gdd && @forecast_gdd > 0 %>
-              <%= @weather_location&.name %> forecast for the next 14 days.
+              <%= @weather_location&.name %> forecast, next <%= @forecast_days %> days.
             <% else %>
               No forecast data available for this location.
             <% end %>
@@ -269,6 +272,8 @@
       <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h2 class="text-lg font-semibold text-brand-dark">Active Fields Progress</h2>
         <div class="flex items-center gap-2 flex-wrap">
+          <input id="field-search" type="text" placeholder="Search field…"
+                 class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a] w-36">
           <select id="filter-location" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
             <option value="">All Locations</option>
           </select>
@@ -285,10 +290,11 @@
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse min-w-[900px]" id="fields-table">
+        <table class="w-full text-left border-collapse min-w-[1000px]" id="fields-table">
           <thead>
             <tr class="border-b border-gray-100 text-xs text-brand-muted uppercase tracking-wider">
               <th class="pb-3 font-medium pl-4">Field</th>
+              <th class="pb-3 font-medium">Farm</th>
               <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('planted')">Planted <span id="sort-icon-planted" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 font-medium">Hybrid</th>
               <th class="pb-3 font-medium">Accum. GDD</th>
@@ -318,12 +324,10 @@
                     <div class="w-7 h-7 rounded-[8px] bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
                       <i class="fa-solid fa-wheat-awn text-xs"></i>
                     </div>
-                    <div>
-                      <p class="text-sm font-semibold text-brand-dark field-name"><%= pe.field.name %></p>
-                      <p class="text-xs text-brand-muted"><%= pe.field.location.name %></p>
-                    </div>
+                    <%= link_to pe.field.name, field_path(pe.field), class: "text-sm font-semibold text-brand-dark hover:text-[#166534] transition-colors field-name" %>
                   </div>
                 </td>
+                <td class="py-2 text-xs text-brand-muted"><%= pe.field.farm.presence || "—" %></td>
                 <td class="py-2 text-xs text-brand-dark"><%= pe.planted_on.strftime("%b %-d") %></td>
                 <td class="py-2 text-xs text-brand-muted"><%= pe.product %></td>
                 <td class="py-2">
@@ -346,7 +350,7 @@
                 <td class="py-2 text-xs text-brand-muted"><%= result.gdd_to_next %></td>
                 <td class="py-2 text-xs text-brand-dark"><%= result.predicted_next_date&.strftime("%b %-d") || "—" %></td>
                 <td class="py-2">
-                  <% status_styles = { on_track: "bg-green-50 text-green-700 border-green-200", ahead: "bg-blue-50 text-blue-700 border-blue-200", delayed: "bg-orange-50 text-orange-700 border-orange-200" } %>
+                  <% status_styles = { on_track: "bg-yellow-50 text-yellow-700 border-yellow-200", ahead: "bg-green-50 text-green-700 border-green-200", delayed: "bg-red-50 text-red-700 border-red-200" } %>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border <%= status_styles[result.status] %>">
                     <%= result.status.to_s.tr("_", " ").capitalize %>
                   </span>

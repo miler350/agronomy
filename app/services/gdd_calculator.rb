@@ -95,12 +95,11 @@ class GddCalculator
   end
 
   def determine_status(calibrated_gdd, current_stage)
-    return :on_track unless current_stage&.gdd_threshold
-    diff = calibrated_gdd - current_stage.gdd_threshold
-    if diff > 50
-      :ahead
-    elsif diff < -50
+    offset = calibration_offset
+    if offset > 50
       :delayed
+    elsif offset < -50
+      :ahead
     else
       :on_track
     end
