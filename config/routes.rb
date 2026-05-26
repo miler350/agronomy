@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   devise_for :users
+  get '/login', to: redirect('/users/sign_in')
   root "dashboard#index"
   get "dashboard/export", to: "dashboard#export", as: :dashboard_export
   get "up" => "rails/health#show", as: :rails_health_check
