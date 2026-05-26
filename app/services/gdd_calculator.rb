@@ -31,7 +31,7 @@ class GddCalculator
       .order(:date)
 
     raw_gdd = readings.sum { |r| daily_gdd(r) }
-    calibrated = raw_gdd + calibration_offset
+    calibrated = raw_gdd - calibration_offset
 
     stages        = GrowthStage.where.not(gdd_threshold: nil).order(:position)
     current_stage = stages.select { |s| s.gdd_threshold <= calibrated }.last
