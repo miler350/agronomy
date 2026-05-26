@@ -63,12 +63,19 @@ class FieldsController < ApplicationController
   end
 
   def geojson_collection
-    features = Field.where.not(geojson_polygon: [nil, ""]).filter_map do |field|
-      geometry = JSON.parse(field.geojson_polygon) rescue nil
-      next unless geometry
-      { type: "Feature", properties: { field_id: field.name, farm: field.farm }, geometry: geometry }
+    static_path = Rails.root.join("public", "fields.geojson")
+    base = File.exist?(static_path) ? JSON.parse(File.read(static_path)) : { "type" => "FeatureCollection", "features" => [] }
+
+    db_geometries = Field.where.not(geojson_polygon: [nil, ""]).each_with_object({}) do |f, h|
+      h[f.name] = JSON.parse(f.geojson_polygon) rescue nil
     end
-    render json: { type: "FeatureCollection", features: features }
+
+    base["features"].each do |feature|
+      fid = feature.dig("properties", "field_id")
+      feature["geometry"] = db_geometries[fid] if db_geometries[fid]
+    end
+
+    render json: base
   end
 
   private
