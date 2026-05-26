@@ -81,6 +81,8 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       var sortCol = null, sortDir = 'asc';
+      var numericSortCols = ['gdd', 'gddToNext'];
+      var allSortCols = ['fieldName','farm','planted','hybrid','gdd','stage','nextStage','gddToNext','predicted','status'];
 
       window.applyTable = function() {
         var rows  = Array.from(document.querySelectorAll('.field-row'));
@@ -89,21 +91,28 @@
 
         var search       = (document.getElementById('field-search')?.value || '').toLowerCase();
         var filterLoc    = document.getElementById('filter-location')?.value || '';
+        var filterFarm   = document.getElementById('filter-farm')?.value     || '';
         var filterStatus = document.getElementById('filter-status')?.value   || '';
         var filterStage  = document.getElementById('filter-stage')?.value    || '';
 
         rows.forEach(function(row) {
-          var name = (row.querySelector('.field-name')?.textContent || '').toLowerCase();
+          var name = (row.dataset.fieldName || '').toLowerCase();
           var show = (!search || name.includes(search)) &&
-                     (!filterLoc    || row.dataset.location === filterLoc)    &&
-                     (!filterStatus || row.dataset.status   === filterStatus)  &&
+                     (!filterLoc    || row.dataset.location === filterLoc)   &&
+                     (!filterFarm   || row.dataset.farm     === filterFarm)  &&
+                     (!filterStatus || row.dataset.status   === filterStatus) &&
                      (!filterStage  || row.dataset.stage    === filterStage);
           row.style.display = show ? '' : 'none';
         });
 
         if (sortCol) {
-          rows.slice().sort(function(a, b) {
+          var visibleRows = rows.filter(function(r){ return r.style.display !== 'none'; });
+          visibleRows.slice().sort(function(a, b) {
             var va = a.dataset[sortCol] || '', vb = b.dataset[sortCol] || '';
+            if (numericSortCols.includes(sortCol)) {
+              var na = parseFloat(va) || 0, nb = parseFloat(vb) || 0;
+              return sortDir === 'asc' ? na - nb : nb - na;
+            }
             return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
           }).forEach(function(r) { tbody.appendChild(r); });
         }
@@ -112,7 +121,7 @@
       window.setSort = function(col) {
         sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
         sortCol = col;
-        ['planted', 'predicted'].forEach(function(c) {
+        allSortCols.forEach(function(c) {
           var el = document.getElementById('sort-icon-' + c);
           if (!el) return;
           el.textContent = sortCol === c ? (sortDir === 'asc' ? '↑' : '↓') : '↕';
@@ -121,13 +130,16 @@
         applyTable();
       };
 
-      // Populate location and stage dropdowns from row data
-      var rows   = Array.from(document.querySelectorAll('.field-row'));
-      var locs   = [...new Set(rows.map(function(r){ return r.dataset.location; }).filter(Boolean))].sort();
-      var stages = [...new Set(rows.map(function(r){ return r.dataset.stage;    }).filter(Boolean))].sort();
+      // Populate filter dropdowns from row data
+      var rows     = Array.from(document.querySelectorAll('.field-row'));
+      var locs     = [...new Set(rows.map(function(r){ return r.dataset.location; }).filter(Boolean))].sort();
+      var farms    = [...new Set(rows.map(function(r){ return r.dataset.farm;     }).filter(Boolean))].sort();
+      var stages   = [...new Set(rows.map(function(r){ return r.dataset.stage;    }).filter(Boolean))].sort();
       var locSel   = document.getElementById('filter-location');
+      var farmSel  = document.getElementById('filter-farm');
       var stageSel = document.getElementById('filter-stage');
       locs.forEach(function(l)   { var o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o);   });
+      farms.forEach(function(f)  { var o = document.createElement('option'); o.value = f; o.textContent = f; farmSel.appendChild(o);  });
       stages.forEach(function(s) { var o = document.createElement('option'); o.value = s; o.textContent = s; stageSel.appendChild(o); });
 
       // Search input
@@ -244,9 +256,9 @@
             <% end %>
             <select name="forecast_days" onchange="this.form.submit()"
                     class="text-xs bg-white/20 px-2 py-1 rounded-md font-medium text-white border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-white/50">
-              <option value="3"  <%= @forecast_days == 3  ? 'selected' : '' %>>Next 3 Days</option>
-              <option value="7"  <%= @forecast_days == 7  ? 'selected' : '' %>>Next 7 Days</option>
-              <option value="14" <%= @forecast_days == 14 ? 'selected' : '' %>>Next 14 Days</option>
+              <option value="3"  style="background:#fff;color:#1f2937" <%= @forecast_days == 3  ? 'selected' : '' %>>Next 3 Days</option>
+              <option value="7"  style="background:#fff;color:#1f2937" <%= @forecast_days == 7  ? 'selected' : '' %>>Next 7 Days</option>
+              <option value="14" style="background:#fff;color:#1f2937" <%= @forecast_days == 14 ? 'selected' : '' %>>Next 14 Days</option>
             </select>
           <% end %>
         </div>
@@ -277,6 +289,9 @@
           <select id="filter-location" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
             <option value="">All Locations</option>
           </select>
+          <select id="filter-farm" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+            <option value="">All Farms</option>
+          </select>
           <select id="filter-status" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
             <option value="">All Statuses</option>
             <option value="on_track">On Track</option>
@@ -293,16 +308,16 @@
         <table class="w-full text-left border-collapse min-w-[1000px]" id="fields-table">
           <thead>
             <tr class="border-b border-gray-100 text-xs text-brand-muted uppercase tracking-wider">
-              <th class="pb-3 font-medium pl-4">Field</th>
-              <th class="pb-3 font-medium">Farm</th>
+              <th class="pb-3 font-medium pl-4 cursor-pointer select-none whitespace-nowrap" onclick="setSort('fieldName')">Field <span id="sort-icon-fieldName" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('farm')">Farm <span id="sort-icon-farm" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('planted')">Planted <span id="sort-icon-planted" class="text-gray-400 text-[10px]">↕</span></th>
-              <th class="pb-3 font-medium">Hybrid</th>
-              <th class="pb-3 font-medium">Accum. GDD</th>
-              <th class="pb-3 font-medium w-48">Stage Progress</th>
-              <th class="pb-3 font-medium">Next Stage</th>
-              <th class="pb-3 font-medium">GDD to Next</th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('hybrid')">Hybrid <span id="sort-icon-hybrid" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('gdd')">Accum. GDD <span id="sort-icon-gdd" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap w-48" onclick="setSort('stage')">Stage <span id="sort-icon-stage" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('nextStage')">Next Stage <span id="sort-icon-nextStage" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('gddToNext')">GDD to Next <span id="sort-icon-gddToNext" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('predicted')">Predicted Date <span id="sort-icon-predicted" class="text-gray-400 text-[10px]">↕</span></th>
-              <th class="pb-3 font-medium">Status</th>
+              <th class="pb-3 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setSort('status')">Status <span id="sort-icon-status" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 font-medium pr-4 text-right"></th>
             </tr>
           </thead>
@@ -314,9 +329,15 @@
               <% next_short  = result.next_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
               <% pct = [[result.calibrated_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
               <tr class="hover:bg-gray-50/50 transition-colors field-row"
+                  data-field-name="<%= pe.field.name.downcase %>"
                   data-location="<%= pe.field.location.name %>"
+                  data-farm="<%= pe.field.farm.to_s %>"
                   data-status="<%= result.status %>"
                   data-stage="<%= result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>"
+                  data-hybrid="<%= pe.product.to_s.downcase %>"
+                  data-gdd="<%= result.calibrated_gdd.round %>"
+                  data-next-stage="<%= next_short.to_s.downcase %>"
+                  data-gdd-to-next="<%= result.gdd_to_next.to_f.round %>"
                   data-planted="<%= pe.planted_on %>"
                   data-predicted="<%= result.predicted_next_date || '' %>">
                 <td class="py-2 pl-4">

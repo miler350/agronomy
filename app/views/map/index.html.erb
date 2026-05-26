@@ -179,10 +179,11 @@
         const bounds = new mapboxgl.LngLatBounds();
         geojson.features.forEach(f => {
           const geom = f.geometry;
-          const rings = geom.type === 'MultiPolygon'
-            ? geom.coordinates.flatMap(poly => poly)
-            : geom.coordinates;
-          rings[0].forEach(c => bounds.extend(c));
+          if (geom.type === 'MultiPolygon') {
+            geom.coordinates.forEach(poly => poly[0].forEach(c => bounds.extend(c)));
+          } else {
+            geom.coordinates[0].forEach(c => bounds.extend(c));
+          }
         });
         map.fitBounds(bounds, { padding: 40, duration: 1000 });
       });

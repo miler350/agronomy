@@ -2,6 +2,8 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       var sortCol = null, sortDir = 'asc';
+      var numericCols = ['gdd', 'gddToNext'];
+      var allDDCols = ['field','location','planted','product','gdd','stage','nextStage','gddToNext','predicted','status'];
 
       window.applyDDTable = function() {
         var rows  = Array.from(document.querySelectorAll('.dd-row'));
@@ -9,20 +11,27 @@
         if (!tbody) return;
 
         var search       = (document.getElementById('dd-search')?.value || '').toLowerCase();
-        var filterStatus = document.getElementById('dd-filter-status')?.value || '';
-        var filterStage  = document.getElementById('dd-filter-stage')?.value  || '';
+        var filterLoc    = document.getElementById('dd-filter-location')?.value || '';
+        var filterStatus = document.getElementById('dd-filter-status')?.value   || '';
+        var filterStage  = document.getElementById('dd-filter-stage')?.value    || '';
 
         rows.forEach(function(row) {
           var name = (row.dataset.field || '').toLowerCase();
           var show = (!search || name.includes(search)) &&
-                     (!filterStatus || row.dataset.status === filterStatus) &&
-                     (!filterStage  || row.dataset.stage  === filterStage);
+                     (!filterLoc    || row.dataset.location === filterLoc)   &&
+                     (!filterStatus || row.dataset.status   === filterStatus) &&
+                     (!filterStage  || row.dataset.stage    === filterStage);
           row.style.display = show ? '' : 'none';
         });
 
         if (sortCol) {
-          rows.slice().sort(function(a, b) {
+          var visibleRows = rows.filter(function(r){ return r.style.display !== 'none'; });
+          visibleRows.slice().sort(function(a, b) {
             var va = a.dataset[sortCol] || '', vb = b.dataset[sortCol] || '';
+            if (numericCols.includes(sortCol)) {
+              var na = parseFloat(va) || 0, nb = parseFloat(vb) || 0;
+              return sortDir === 'asc' ? na - nb : nb - na;
+            }
             return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
           }).forEach(function(r) { tbody.appendChild(r); });
         }
@@ -31,7 +40,7 @@
       window.setDDSort = function(col) {
         sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
         sortCol = col;
-        ['planted', 'predicted'].forEach(function(c) {
+        allDDCols.forEach(function(c) {
           var el = document.getElementById('dd-sort-' + c);
           if (!el) return;
           el.textContent = sortCol === c ? (sortDir === 'asc' ? '↑' : '↓') : '↕';
@@ -39,6 +48,12 @@
         });
         applyDDTable();
       };
+
+      // Populate location filter from row data
+      var rows   = Array.from(document.querySelectorAll('.dd-row'));
+      var locs   = [...new Set(rows.map(function(r){ return r.dataset.location; }).filter(Boolean))].sort();
+      var locSel = document.getElementById('dd-filter-location');
+      if (locSel) locs.forEach(function(l){ var o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o); });
 
       var searchInput = document.getElementById('dd-search');
       if (searchInput) searchInput.addEventListener('input', applyDDTable);
@@ -64,6 +79,10 @@
     <div class="flex flex-wrap items-center gap-3">
       <input id="dd-search" type="text" placeholder="Search field…"
              class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-[#6B7280] bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a] w-40">
+      <select id="dd-filter-location" onchange="applyDDTable()"
+              class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-[#6B7280] bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+        <option value="">All Locations</option>
+      </select>
       <select id="dd-filter-status" onchange="applyDDTable()"
               class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-[#6B7280] bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
         <option value="">All Statuses</option>
@@ -85,16 +104,16 @@
         <table class="w-full text-left border-collapse min-w-[1000px]">
           <thead>
             <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
-              <th class="pb-3 pt-4 px-6 font-medium">Field</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Location</th>
+              <th class="pb-3 pt-4 px-6 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('field')">Field <span id="dd-sort-field" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('location')">Location <span id="dd-sort-location" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('planted')">Planted <span id="dd-sort-planted" class="text-gray-400 text-[10px]">↕</span></th>
-              <th class="pb-3 pt-4 px-4 font-medium">Product</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Current GDD</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Stage</th>
-              <th class="pb-3 pt-4 px-4 font-medium">Next Stage</th>
-              <th class="pb-3 pt-4 px-4 font-medium">GDD to Next</th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('product')">Product <span id="dd-sort-product" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('gdd')">Current GDD <span id="dd-sort-gdd" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('stage')">Stage <span id="dd-sort-stage" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('nextStage')">Next Stage <span id="dd-sort-nextStage" class="text-gray-400 text-[10px]">↕</span></th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('gddToNext')">GDD to Next <span id="dd-sort-gddToNext" class="text-gray-400 text-[10px]">↕</span></th>
               <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('predicted')">Predicted Date <span id="dd-sort-predicted" class="text-gray-400 text-[10px]">↕</span></th>
-              <th class="pb-3 pt-4 px-4 font-medium">Status</th>
+              <th class="pb-3 pt-4 px-4 font-medium cursor-pointer select-none whitespace-nowrap" onclick="setDDSort('status')">Status <span id="dd-sort-status" class="text-gray-400 text-[10px]">↕</span></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
@@ -106,8 +125,13 @@
               <% pct = [[result.calibrated_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
               <tr class="hover:bg-gray-50/50 transition-colors dd-row"
                   data-field="<%= pe.field.name.downcase %>"
+                  data-location="<%= pe.field.location.name %>"
+                  data-product="<%= pe.product.to_s.downcase %>"
+                  data-gdd="<%= result.calibrated_gdd.round %>"
                   data-status="<%= result.status %>"
                   data-stage="<%= stage_short %>"
+                  data-next-stage="<%= next_short.to_s.downcase %>"
+                  data-gdd-to-next="<%= result.gdd_to_next.to_f.round %>"
                   data-planted="<%= pe.planted_on %>"
                   data-predicted="<%= result.predicted_next_date || '' %>">
                 <td class="py-2 px-6">
