@@ -327,7 +327,7 @@
               <% result = row[:result] %>
               <% stage_short = result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
               <% next_short  = result.next_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
-              <% pct = [[result.calibrated_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
+              <% pct = [[result.cumulative_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
               <tr class="hover:bg-gray-50/50 transition-colors field-row"
                   data-field-name="<%= pe.field.name.downcase %>"
                   data-location="<%= pe.field.location.name %>"
@@ -335,7 +335,7 @@
                   data-status="<%= result.status %>"
                   data-stage="<%= result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>"
                   data-hybrid="<%= pe.product.to_s.downcase %>"
-                  data-gdd="<%= result.calibrated_gdd.round %>"
+                  data-gdd="<%= result.cumulative_gdd.round %>"
                   data-next-stage="<%= next_short.to_s.downcase %>"
                   data-gdd-to-next="<%= result.gdd_to_next.to_f.round %>"
                   data-planted="<%= pe.planted_on %>"
@@ -353,7 +353,7 @@
                 <td class="py-2 text-xs text-brand-muted"><%= pe.product %></td>
                 <td class="py-2">
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-brand-dark">
-                    <%= number_with_delimiter(result.calibrated_gdd.round) %>
+                    <%= number_with_delimiter(result.cumulative_gdd.round) %>
                   </span>
                 </td>
                 <td class="py-2 pr-4">

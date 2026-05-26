@@ -122,12 +122,12 @@
               <% result = row[:result] %>
               <% stage_short = result.current_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
               <% next_short  = result.next_stage&.name&.gsub(/\(.*?\)/, '')&.strip %>
-              <% pct = [[result.calibrated_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
+              <% pct = [[result.cumulative_gdd / (result.next_stage&.gdd_threshold&.to_f || 2650) * 100, 0].max, 100].min.round %>
               <tr class="hover:bg-gray-50/50 transition-colors dd-row"
                   data-field="<%= pe.field.name.downcase %>"
                   data-location="<%= pe.field.location.name %>"
                   data-product="<%= pe.product.to_s.downcase %>"
-                  data-gdd="<%= result.calibrated_gdd.round %>"
+                  data-gdd="<%= result.cumulative_gdd.round %>"
                   data-status="<%= result.status %>"
                   data-stage="<%= stage_short %>"
                   data-next-stage="<%= next_short.to_s.downcase %>"
@@ -150,7 +150,7 @@
                 <td class="py-2 px-4">
                   <div class="flex flex-col gap-1">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-[#1F2937]">
-                      <%= number_with_delimiter(result.calibrated_gdd.round) %> GDD
+                      <%= number_with_delimiter(result.cumulative_gdd.round) %> GDD
                     </span>
                     <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                       <div class="h-1.5 rounded-full" style="width: <%= pct %>%; background: linear-gradient(90deg, #4ade80 0%, #16a34a 100%);"></div>
