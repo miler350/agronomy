@@ -30,8 +30,62 @@
     </div>
   </div>
 
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Shapefile Boundary <span class="text-gray-400 font-normal">(optional)</span></label>
+    <div class="flex items-center gap-3">
+      <input type="file" id="shapefile-upload" accept=".zip"
+             class="text-sm text-gray-600 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer">
+      <span id="shapefile-status" class="text-xs"></span>
+    </div>
+    <%= f.hidden_field :geojson_polygon, id: "geojson-polygon" %>
+    <% if field.geojson_polygon.present? %>
+      <p class="mt-1 text-xs text-green-700"><i class="fa-solid fa-check mr-1"></i>Boundary already stored — upload a new file to replace it</p>
+    <% else %>
+      <p class="mt-1 text-xs text-gray-500">Upload a .zip shapefile to set the field boundary on the map</p>
+    <% end %>
+  </div>
+
   <div class="flex items-center gap-3 pt-2">
     <%= f.submit field.new_record? ? "Create Field" : "Update Field", class: "px-5 py-2 bg-[#166534] text-white text-sm font-semibold rounded-lg hover:bg-[#14532d] transition cursor-pointer" %>
     <%= link_to "Cancel", fields_path, class: "px-5 py-2 text-sm font-medium text-gray-600 hover:text-gray-800" %>
   </div>
 <% end %>
+
+<script src="https://cdn.jsdelivr.net/npm/shpjs@4.0.2/dist/shp.js"></script>
+<script>
+  document.getElementById('shapefile-upload').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var status = document.getElementById('shapefile-status');
+    status.textContent = 'Parsing…';
+    status.style.color = '#6b7280';
+
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      shp(evt.target.result).then(function(result) {
+        var features = Array.isArray(result) ? result.flatMap(function(fc){ return fc.features; }) : result.features;
+        if (!features || !features.length) {
+          status.textContent = 'No features found in shapefile';
+          status.style.color = '#dc2626';
+          return;
+        }
+        var geometry;
+        if (features.length === 1) {
+          geometry = features[0].geometry;
+        } else {
+          var coords = features.flatMap(function(f) {
+            return f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+          });
+          geometry = { type: 'MultiPolygon', coordinates: coords };
+        }
+        document.getElementById('geojson-polygon').value = JSON.stringify(geometry);
+        status.textContent = features.length + ' feature' + (features.length > 1 ? 's' : '') + ' loaded ✓';
+        status.style.color = '#166534';
+      }).catch(function(err) {
+        status.textContent = 'Error: ' + err.message;
+        status.style.color = '#dc2626';
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  });
+</script>

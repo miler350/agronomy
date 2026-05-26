@@ -62,6 +62,15 @@ class FieldsController < ApplicationController
     redirect_to fields_path, notice: "Field was successfully deleted."
   end
 
+  def geojson_collection
+    features = Field.where.not(geojson_polygon: [nil, ""]).filter_map do |field|
+      geometry = JSON.parse(field.geojson_polygon) rescue nil
+      next unless geometry
+      { type: "Feature", properties: { field_id: field.name, farm: field.farm }, geometry: geometry }
+    end
+    render json: { type: "FeatureCollection", features: features }
+  end
+
   private
 
   def set_field
@@ -69,6 +78,6 @@ class FieldsController < ApplicationController
   end
 
   def field_params
-    params.require(:field).permit(:name, :location_id, :latitude, :longitude, :farm)
+    params.require(:field).permit(:name, :location_id, :latitude, :longitude, :farm, :geojson_polygon)
   end
 end
