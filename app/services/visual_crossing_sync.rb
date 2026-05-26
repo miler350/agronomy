@@ -26,9 +26,12 @@ class VisualCrossingSync
 
   private
 
-  # VC expects "City,State" (no space) in the path, with spaces encoded as %20.
   def encoded_location
-    CGI.escape(@location.vc_identifier.gsub(", ", ",")).gsub("+", "%20")
+    if @location.latitude.present? && @location.longitude.present?
+      "#{@location.latitude},#{@location.longitude}"
+    else
+      CGI.escape(@location.vc_identifier.gsub(", ", ",")).gsub("+", "%20")
+    end
   end
 
   def fetch(from, to)
