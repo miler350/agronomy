@@ -24,10 +24,12 @@
         <select name="field_observation[growth_stage_id]" id="obs-stage"
                 style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;background:white;">
           <option value="">— Select stage —</option>
-          <% @growth_stages.each do |stage| %>
-            <option value="<%= stage.id %>">
-              <%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD threshold)
-            </option>
+          <% @growth_stages.group_by(&:crop_type).each do |crop, stages| %>
+            <optgroup label="<%= crop.capitalize %>">
+              <% stages.each do |stage| %>
+                <option value="<%= stage.id %>"><%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD)</option>
+              <% end %>
+            </optgroup>
           <% end %>
         </select>
       </div>
@@ -94,14 +96,19 @@
         var filterFarm   = document.getElementById('filter-farm')?.value     || '';
         var filterStatus = document.getElementById('filter-status')?.value   || '';
         var filterStage  = document.getElementById('filter-stage')?.value    || '';
+        var filterCrop   = document.getElementById('filter-crop')?.value     || '';
+        var filterTag    = document.getElementById('filter-tag')?.value      || '';
 
         rows.forEach(function(row) {
           var name = (row.dataset.fieldName || '').toLowerCase();
+          var rowTags = (row.dataset.tags || '').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
           var show = (!search || name.includes(search)) &&
                      (!filterLoc    || row.dataset.location === filterLoc)   &&
                      (!filterFarm   || row.dataset.farm     === filterFarm)  &&
                      (!filterStatus || row.dataset.status   === filterStatus) &&
-                     (!filterStage  || row.dataset.stage    === filterStage);
+                     (!filterStage  || row.dataset.stage    === filterStage)  &&
+                     (!filterCrop   || row.dataset.crop     === filterCrop)   &&
+                     (!filterTag    || rowTags.includes(filterTag.toLowerCase()));
           row.style.display = show ? '' : 'none';
         });
 
@@ -301,6 +308,19 @@
           <select id="filter-stage" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
             <option value="">All Stages</option>
           </select>
+          <select id="filter-crop" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+            <option value="">All Crops</option>
+            <option value="corn">Corn</option>
+            <option value="soybean">Soybean</option>
+          </select>
+          <% if @tags.any? %>
+          <select id="filter-tag" onchange="applyTable()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-brand-muted bg-white focus:outline-none focus:ring-2 focus:ring-[#16a34a]">
+            <option value="">All Tags</option>
+            <% @tags.each do |tag| %>
+              <option value="<%= tag.name.downcase %>"><%= tag.name %></option>
+            <% end %>
+          </select>
+          <% end %>
         </div>
       </div>
 
@@ -339,13 +359,24 @@
                   data-next-stage="<%= next_short.to_s.downcase %>"
                   data-gdd-to-next="<%= result.gdd_to_next.to_f.round %>"
                   data-planted="<%= pe.planted_on %>"
-                  data-predicted="<%= result.predicted_next_date || '' %>">
+                  data-predicted="<%= result.predicted_next_date || '' %>"
+                  data-crop="<%= pe.crop_type %>"
+                  data-tags="<%= pe.field.tags.map(&:name).join(',').downcase %>">
                 <td class="py-2 pl-4">
-                  <div class="flex items-center gap-2.5">
-                    <div class="w-7 h-7 rounded-[8px] bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
-                      <i class="fa-solid fa-wheat-awn text-xs"></i>
+                  <div class="flex items-center gap-2.5 flex-wrap">
+                    <div class="w-7 h-7 rounded-[8px] <%= pe.crop_type == 'soybean' ? 'bg-blue-50' : 'bg-gray-100' %> flex items-center justify-center <%= pe.crop_type == 'soybean' ? 'text-blue-500' : 'text-gray-500' %> flex-shrink-0">
+                      <i class="fa-solid <%= pe.crop_type == 'soybean' ? 'fa-leaf' : 'fa-wheat-awn' %> text-xs"></i>
                     </div>
                     <%= link_to pe.field.name, field_path(pe.field), class: "text-sm font-semibold text-brand-dark hover:text-[#166534] transition-colors field-name" %>
+                    <% pe.field.tags.each do |tag| %>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100"><%= tag.name %></span>
+                    <% end %>
+                    <% if pe.field_observations.any? { |obs| obs.observed_on && obs.observed_on >= Date.current - 7 } %>
+                      <% recent = pe.field_observations.select { |obs| obs.observed_on }.max_by(&:observed_on) %>
+                      <span title="Scouted <%= recent&.observed_on&.strftime('%b %-d') %>" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex-shrink-0">
+                        <i class="fa-solid fa-binoculars" style="font-size:8px;"></i>
+                      </span>
+                    <% end %>
                   </div>
                 </td>
                 <td class="py-2 text-xs text-brand-muted"><%= pe.field.farm.presence || "—" %></td>

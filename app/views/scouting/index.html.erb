@@ -1,0 +1,63 @@
+<div class="flex flex-col h-full">
+  <header class="px-8 py-5 bg-white border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
+    <div>
+      <h1 class="text-xl font-bold text-[#1F2937]">Scouting</h1>
+      <p class="text-sm text-[#6B7280] mt-0.5">All field observations across the operation</p>
+    </div>
+  </header>
+
+  <div class="p-8 overflow-y-auto flex-1">
+    <% if @observations.any? %>
+      <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
+              <th class="pb-3 pt-4 px-6 font-medium">Date</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Field</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Location</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Stage Observed</th>
+              <th class="pb-3 pt-4 px-4 font-medium">GDD</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <% @observations.each do |obs| %>
+              <% field = obs.planting_event.field %>
+              <% is_recent = obs.observed_on && obs.observed_on >= Date.current - 7 %>
+              <tr class="hover:bg-gray-50/50 transition-colors">
+                <td class="py-3 px-6 text-sm font-medium text-[#1F2937] whitespace-nowrap">
+                  <div class="flex items-center gap-2">
+                    <%= obs.observed_on&.strftime("%b %-d, %Y") || "—" %>
+                    <% if is_recent %>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">New</span>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="py-3 px-4 text-sm">
+                  <%= link_to field.name, field_path(field), class: "font-semibold text-[#1F2937] hover:text-[#166534] transition-colors" %>
+                </td>
+                <td class="py-3 px-4 text-xs text-[#6B7280]"><%= field.location.name %></td>
+                <td class="py-3 px-4">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-800">
+                    <%= obs.growth_stage.name %>
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-xs text-[#6B7280] font-mono">
+                  <%= number_with_delimiter(obs.observed_gdd.to_f.round) %>
+                </td>
+                <td class="py-3 px-4 text-sm text-[#6B7280] max-w-sm whitespace-pre-wrap break-words">
+                  <%= obs.notes.presence || "—" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm py-16 text-center">
+        <i class="fa-solid fa-binoculars text-3xl text-gray-200 mb-4 block"></i>
+        <p class="text-sm text-gray-400">No field observations have been recorded yet.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

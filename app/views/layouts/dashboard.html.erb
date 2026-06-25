@@ -107,6 +107,10 @@
         <i class="fa-solid fa-seedling w-5 text-center flex-shrink-0"></i>
         <span class="nav-label whitespace-nowrap">Growth Stages</span>
       <% end %>
+      <%= link_to tags_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'tags' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-tags w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Tags</span>
+      <% end %>
       <% end %>
       <%= link_to weather_data_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'weather_data' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
         <i class="fa-solid fa-cloud-sun w-5 text-center flex-shrink-0"></i>
@@ -115,6 +119,10 @@
       <%= link_to planting_events_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'planting_events' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
         <i class="fa-solid fa-calendar-days w-5 text-center flex-shrink-0"></i>
         <span class="nav-label whitespace-nowrap">Planting Data</span>
+      <% end %>
+      <%= link_to scouting_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'scouting' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+        <i class="fa-solid fa-binoculars w-5 text-center flex-shrink-0"></i>
+        <span class="nav-label whitespace-nowrap">Scouting</span>
       <% end %>
       <%= link_to degree_days_path, class: "nav-link flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'degree_days' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
         <i class="fa-solid fa-fire w-5 text-center flex-shrink-0"></i>
@@ -182,6 +190,10 @@
           <i class="fa-solid fa-seedling w-5 text-center flex-shrink-0"></i>
           <span class="whitespace-nowrap">Growth Stages</span>
         <% end %>
+        <%= link_to tags_path, onclick: "closeMobileNav()", class: "flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'tags' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+          <i class="fa-solid fa-tags w-5 text-center flex-shrink-0"></i>
+          <span class="whitespace-nowrap">Tags</span>
+        <% end %>
         <% end %>
         <%= link_to weather_data_path, onclick: "closeMobileNav()", class: "flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'weather_data' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
           <i class="fa-solid fa-cloud-sun w-5 text-center flex-shrink-0"></i>
@@ -190,6 +202,10 @@
         <%= link_to planting_events_path, onclick: "closeMobileNav()", class: "flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'planting_events' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
           <i class="fa-solid fa-calendar-days w-5 text-center flex-shrink-0"></i>
           <span class="whitespace-nowrap">Planting Data</span>
+        <% end %>
+        <%= link_to scouting_path, onclick: "closeMobileNav()", class: "flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'scouting' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
+          <i class="fa-solid fa-binoculars w-5 text-center flex-shrink-0"></i>
+          <span class="whitespace-nowrap">Scouting</span>
         <% end %>
         <%= link_to degree_days_path, onclick: "closeMobileNav()", class: "flex items-center gap-3 px-4 py-3 rounded-[12px] font-medium transition-colors #{params[:controller] == 'degree_days' ? 'bg-green-50 text-green-800' : 'text-brand-muted hover:bg-gray-50 hover:text-brand-dark'}" do %>
           <i class="fa-solid fa-fire w-5 text-center flex-shrink-0"></i>

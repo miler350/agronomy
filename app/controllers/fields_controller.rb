@@ -4,13 +4,13 @@ class FieldsController < ApplicationController
   before_action :require_admin!, only: [:new, :create, :edit, :update, :destroy]
 
   def index
-    @fields = Field.includes(:location, :planting_events).order(:name)
+    @fields = Field.includes(:location, :planting_events, :tags).order(:name)
   end
 
   def show
     @current_planting_event = @field.planting_events.order(planted_on: :desc).first
     @gdd_result = GddCalculator.calculate(@current_planting_event) if @current_planting_event
-    @growth_stages = GrowthStage.where.not(gdd_threshold: nil).order(:position)
+    @growth_stages = GrowthStage.where.not(gdd_threshold: nil).order(:crop_type, :position)
     @observations = @current_planting_event&.field_observations
       &.includes(:growth_stage)
       &.order(observed_on: :desc) || []
@@ -85,6 +85,6 @@ class FieldsController < ApplicationController
   end
 
   def field_params
-    params.require(:field).permit(:name, :location_id, :latitude, :longitude, :farm, :geojson_polygon)
+    params.require(:field).permit(:name, :location_id, :latitude, :longitude, :farm, :geojson_polygon, tag_ids: [])
   end
 end

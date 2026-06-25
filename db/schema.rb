@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_26_194603) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_24_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -24,6 +24,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_26_194603) do
     t.datetime "updated_at", null: false
     t.index ["growth_stage_id"], name: "index_field_observations_on_growth_stage_id"
     t.index ["planting_event_id"], name: "index_field_observations_on_planting_event_id"
+  end
+
+  create_table "field_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "field_id", null: false
+    t.bigint "tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["field_id", "tag_id"], name: "index_field_tags_on_field_id_and_tag_id", unique: true
+    t.index ["field_id"], name: "index_field_tags_on_field_id"
+    t.index ["tag_id"], name: "index_field_tags_on_tag_id"
   end
 
   create_table "fields", force: :cascade do |t|
@@ -40,6 +50,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_26_194603) do
 
   create_table "growth_stages", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "crop_type", default: "corn", null: false
     t.text "description"
     t.decimal "gdd_threshold"
     t.string "name"
@@ -60,11 +71,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_26_194603) do
 
   create_table "planting_events", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "crop_type", default: "corn", null: false
     t.bigint "field_id", null: false
     t.date "planted_on"
     t.string "product"
     t.datetime "updated_at", null: false
     t.index ["field_id"], name: "index_planting_events_on_field_id"
+  end
+
+  create_table "tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_tags_on_name", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -122,6 +141,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_26_194603) do
 
   add_foreign_key "field_observations", "growth_stages"
   add_foreign_key "field_observations", "planting_events"
+  add_foreign_key "field_tags", "fields"
+  add_foreign_key "field_tags", "tags"
   add_foreign_key "fields", "locations"
   add_foreign_key "planting_events", "fields"
   add_foreign_key "weather_readings", "locations"

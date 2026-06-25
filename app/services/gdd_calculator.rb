@@ -33,7 +33,7 @@ class GddCalculator
     raw_gdd = readings.sum { |r| daily_gdd(r) }
     calibrated = raw_gdd - calibration_offset
 
-    stages        = GrowthStage.where.not(gdd_threshold: nil).order(:position)
+    stages        = GrowthStage.where.not(gdd_threshold: nil).where(crop_type: @event.crop_type).order(:position)
     current_stage = stages.select { |s| s.gdd_threshold <= calibrated }.last
     next_stage    = stages.find   { |s| s.gdd_threshold >  calibrated }
 

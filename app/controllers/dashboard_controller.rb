@@ -2,7 +2,7 @@ class DashboardController < ApplicationController
   layout "dashboard"
 
   def index
-    @rows = PlantingEvent.includes(field: :location, field_observations: :growth_stage)
+    @rows = PlantingEvent.includes(field: [:location, :tags], field_observations: :growth_stage)
       .joins(:field)
       .order("fields.name")
       .map do |pe|
@@ -11,7 +11,8 @@ class DashboardController < ApplicationController
       end
 
     @last_synced   = WeatherReading.maximum(:updated_at)
-    @growth_stages = GrowthStage.where.not(gdd_threshold: nil).order(:position)
+    @growth_stages = GrowthStage.where.not(gdd_threshold: nil).order(:crop_type, :position)
+    @tags          = Tag.order(:name)
 
     @locations        = Location.order(:name)
     @weather_location = params[:location_id] ? @locations.find_by(id: params[:location_id]) : @locations.first

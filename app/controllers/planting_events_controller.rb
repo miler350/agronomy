@@ -47,6 +47,6 @@ class PlantingEventsController < ApplicationController
   end
 
   def event_params
-    params.require(:planting_event).permit(:field_id, :planted_on, :product)
+    params.require(:planting_event).permit(:field_id, :planted_on, :product, :crop_type)
   end
 end

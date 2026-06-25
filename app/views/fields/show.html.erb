@@ -55,10 +55,12 @@
         <select name="field_observation[growth_stage_id]" id="stage-select"
                 class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] bg-white">
           <option value="">— Select stage —</option>
-          <% @growth_stages.each do |stage| %>
-            <option value="<%= stage.id %>">
-              <%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD threshold)
-            </option>
+          <% @growth_stages.group_by(&:crop_type).each do |crop, stages| %>
+            <optgroup label="<%= crop.capitalize %>">
+              <% stages.each do |stage| %>
+                <option value="<%= stage.id %>"><%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD)</option>
+              <% end %>
+            </optgroup>
           <% end %>
         </select>
       </div>
@@ -194,7 +196,7 @@
                 <td class="px-4 py-3 text-sm text-[#6B7280] font-mono">
                   <%= number_with_delimiter(obs.observed_gdd.to_f.round) %>
                 </td>
-                <td class="px-4 py-3 text-sm text-[#6B7280] max-w-xs truncate">
+                <td class="px-4 py-3 text-sm text-[#6B7280] max-w-xs whitespace-pre-wrap break-words">
                   <%= obs.notes.presence || "—" %>
                 </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-3">

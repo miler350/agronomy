@@ -4,7 +4,7 @@ class GrowthStagesController < ApplicationController
   before_action :require_admin!, only: [:new, :create, :edit, :update, :destroy]
 
   def index
-    @stages = GrowthStage.order(:position)
+    @stages = GrowthStage.order(:crop_type, :position)
   end
 
   def new
@@ -43,6 +43,6 @@ class GrowthStagesController < ApplicationController
   end
 
   def stage_params
-    params.require(:growth_stage).permit(:name, :gdd_threshold, :description, :position)
+    params.require(:growth_stage).permit(:name, :gdd_threshold, :description, :position, :crop_type)
   end
 end

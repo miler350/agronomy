@@ -1,0 +1,60 @@
+<div class="flex flex-col h-full">
+  <header class="px-8 py-5 bg-white border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
+    <div>
+      <h1 class="text-xl font-bold text-[#1F2937]">Tags</h1>
+      <p class="text-sm text-[#6B7280] mt-0.5">Create tags to categorize and filter fields</p>
+    </div>
+    <%= form_with model: @tag, url: tags_path, class: "flex items-center gap-2" do |f| %>
+      <% if @tag.errors.any? %>
+        <span class="text-xs text-red-600"><%= @tag.errors.full_messages.first %></span>
+      <% end %>
+      <%= f.text_field :name, placeholder: "New tag name…",
+            class: "px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] w-44" %>
+      <%= f.submit "Add Tag",
+            class: "flex items-center gap-1.5 px-4 py-2 bg-[#166534] text-white text-sm font-semibold rounded-xl hover:bg-[#14532d] transition cursor-pointer" %>
+    <% end %>
+  </header>
+
+  <div class="p-8 overflow-y-auto flex-1">
+    <div class="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden">
+      <% if @tags.any? %>
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
+              <th class="pb-3 pt-4 px-6 font-medium">Tag</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Fields</th>
+              <th class="pb-3 pt-4 px-4 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <% @tags.each do |tag| %>
+              <tr class="hover:bg-gray-50/50 transition-colors">
+                <td class="py-3 px-6">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                    <i class="fa-solid fa-tag mr-1.5 text-xs"></i><%= tag.name %>
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-sm text-[#6B7280]">
+                  <%= tag.fields.count %> field<%= tag.fields.count == 1 ? "" : "s" %>
+                </td>
+                <td class="py-3 px-4 text-right">
+                  <%= form_with url: tag_path(tag), method: :delete, data: { turbo: false }, style: "display:inline;margin:0;" do %>
+                    <button type="submit" onclick="return confirm('Delete tag &quot;<%= j tag.name %>&quot;? It will be removed from all fields.')"
+                            class="px-3 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition border border-red-200">
+                      <i class="fa-solid fa-trash mr-1"></i> Delete
+                    </button>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="py-16 text-center">
+          <i class="fa-solid fa-tags text-3xl text-gray-200 mb-4 block"></i>
+          <p class="text-sm text-gray-400">No tags yet. Add one above to get started.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

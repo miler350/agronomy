@@ -14,4 +14,6 @@ Rails.application.routes.draw do
   get "weather-data", to: "weather_data#index", as: :weather_data
   get "degree-days", to: "degree_days#index", as: :degree_days
   get "map", to: "map#index", as: :map
+  get "scouting", to: "scouting#index", as: :scouting
+  resources :tags, only: [:index, :create, :destroy]
 end

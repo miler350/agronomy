@@ -18,6 +18,7 @@
         <thead>
           <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
             <th class="pb-3 pt-4 px-6 font-medium">Position</th>
+            <th class="pb-3 pt-4 px-4 font-medium">Crop</th>
             <th class="pb-3 pt-4 px-4 font-medium">Name</th>
             <th class="pb-3 pt-4 px-4 font-medium">GDD Threshold</th>
             <th class="pb-3 pt-4 px-4 font-medium">Description</th>
@@ -30,6 +31,11 @@
               <td class="py-2 px-6">
                 <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-50 text-green-700 text-xs font-bold">
                   <%= stage.position %>
+                </span>
+              </td>
+              <td class="py-2 px-4">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <%= stage.crop_type == 'soybean' ? 'bg-blue-50 text-blue-700' : 'bg-yellow-50 text-yellow-700' %>">
+                  <%= stage.crop_type.capitalize %>
                 </span>
               </td>
               <td class="py-2 px-4">
@@ -63,7 +69,7 @@
           <% end %>
           <% if @stages.empty? %>
             <tr>
-              <td colspan="5" class="py-12 px-6 text-center text-sm text-[#6B7280]">
+              <td colspan="6" class="py-12 px-6 text-center text-sm text-[#6B7280]">
                 <i class="fa-solid fa-seedling text-2xl text-gray-300 mb-3 block"></i>
                 No growth stages yet. <%= link_to "Add your first stage", new_growth_stage_path, class: "text-[#166534] font-medium hover:underline" %>.
               </td>
