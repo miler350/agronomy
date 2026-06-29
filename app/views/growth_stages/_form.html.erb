@@ -11,7 +11,9 @@
 
   <div>
     <%= f.label :crop_type, "Crop Type", class: "block text-sm font-medium text-gray-700 mb-1" %>
-    <%= f.select :crop_type, [["Corn", "corn"], ["Soybean", "soybean"]], {}, { class: "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]" } %>
+    <%= f.select :crop_type, [["Corn", "corn"], ["Soybean", "soybean"]], {},
+        { class: "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a]",
+          id: "stage-crop-type" } %>
   </div>
 
   <div>
@@ -25,10 +27,15 @@
       <%= f.number_field :position, class: "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-transparent", placeholder: "e.g. 5" %>
       <p class="mt-1 text-xs text-gray-500">Order in which stages appear</p>
     </div>
-    <div>
+    <div id="gdd-field">
       <%= f.label :gdd_threshold, "GDD Threshold", class: "block text-sm font-medium text-gray-700 mb-1" %>
       <%= f.number_field :gdd_threshold, step: "any", class: "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-transparent", placeholder: "e.g. 1135" %>
       <p class="mt-1 text-xs text-gray-500">Cumulative GDD required to reach this stage</p>
+    </div>
+    <div id="days-field" style="display:none;">
+      <%= f.label :days_threshold, "Days from Planting", class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= f.number_field :days_threshold, class: "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-transparent", placeholder: "e.g. 46" %>
+      <p class="mt-1 text-xs text-gray-500">Calendar days after planting to reach this stage</p>
     </div>
   </div>
 
@@ -42,3 +49,14 @@
     <%= link_to "Cancel", growth_stages_path, class: "px-5 py-2 text-sm font-medium text-gray-600 hover:text-gray-800" %>
   </div>
 <% end %>
+
+<script>
+  function updateThresholdField() {
+    var crop = document.getElementById('stage-crop-type').value;
+    var isSoybean = crop === 'soybean';
+    document.getElementById('gdd-field').style.display = isSoybean ? 'none' : '';
+    document.getElementById('days-field').style.display = isSoybean ? '' : 'none';
+  }
+  document.getElementById('stage-crop-type').addEventListener('change', updateThresholdField);
+  updateThresholdField();
+</script>

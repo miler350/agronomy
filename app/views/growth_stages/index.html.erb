@@ -2,14 +2,26 @@
   <header class="px-8 py-5 bg-white border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
     <div>
       <h1 class="text-xl font-bold text-[#1F2937]">Growth Stages</h1>
-      <p class="text-sm text-[#6B7280] mt-0.5">Define GDD thresholds for each crop growth stage</p>
+      <p class="text-sm text-[#6B7280] mt-0.5">Stage thresholds by crop type</p>
     </div>
-    <% if current_user.admin? %>
-    <%= link_to new_growth_stage_path, class: "flex items-center gap-2 px-4 py-2 bg-[#166534] text-white text-sm font-semibold rounded-xl hover:bg-[#14532d] transition" do %>
-      <i class="fa-solid fa-plus text-xs"></i>
-      New Stage
-    <% end %>
-    <% end %>
+    <div class="flex items-center gap-3">
+      <div class="flex rounded-lg border border-gray-200 overflow-hidden">
+        <button id="tab-corn" onclick="showCrop('corn')"
+                class="px-4 py-1.5 text-sm font-medium transition bg-[#166534] text-white">
+          <i class="fa-solid fa-wheat-awn mr-1.5 text-xs"></i>Corn
+        </button>
+        <button id="tab-soybean" onclick="showCrop('soybean')"
+                class="px-4 py-1.5 text-sm font-medium transition bg-white text-gray-600 hover:bg-gray-50">
+          <i class="fa-solid fa-leaf mr-1.5 text-xs"></i>Soybean
+        </button>
+      </div>
+      <% if current_user.admin? %>
+      <%= link_to new_growth_stage_path, class: "flex items-center gap-2 px-4 py-2 bg-[#166534] text-white text-sm font-semibold rounded-xl hover:bg-[#14532d] transition" do %>
+        <i class="fa-solid fa-plus text-xs"></i>
+        New Stage
+      <% end %>
+      <% end %>
+    </div>
   </header>
 
   <div class="p-8 space-y-6 overflow-y-auto flex-1">
@@ -18,24 +30,18 @@
         <thead>
           <tr class="border-b border-gray-100 text-xs text-[#6B7280] uppercase tracking-wider">
             <th class="pb-3 pt-4 px-6 font-medium">Position</th>
-            <th class="pb-3 pt-4 px-4 font-medium">Crop</th>
             <th class="pb-3 pt-4 px-4 font-medium">Name</th>
-            <th class="pb-3 pt-4 px-4 font-medium">GDD Threshold</th>
+            <th id="threshold-header" class="pb-3 pt-4 px-4 font-medium">GDD Threshold</th>
             <th class="pb-3 pt-4 px-4 font-medium">Description</th>
             <th class="pb-3 pt-4 px-4 font-medium text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
           <% @stages.each do |stage| %>
-            <tr class="hover:bg-gray-50/50 transition-colors">
+            <tr class="hover:bg-gray-50/50 transition-colors stage-row" data-crop="<%= stage.crop_type %>">
               <td class="py-2 px-6">
                 <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-50 text-green-700 text-xs font-bold">
                   <%= stage.position %>
-                </span>
-              </td>
-              <td class="py-2 px-4">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <%= stage.crop_type == 'soybean' ? 'bg-blue-50 text-blue-700' : 'bg-yellow-50 text-yellow-700' %>">
-                  <%= stage.crop_type.capitalize %>
                 </span>
               </td>
               <td class="py-2 px-4">
@@ -47,10 +53,17 @@
                 </div>
               </td>
               <td class="py-2 px-4">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
-                  <i class="fa-solid fa-fire mr-1 text-xs"></i>
-                  <%= number_with_delimiter(stage.gdd_threshold) %> GDD
-                </span>
+                <% if stage.days_threshold.present? %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                    <i class="fa-solid fa-calendar-days mr-1 text-xs"></i>
+                    Day <%= stage.days_threshold %>
+                  </span>
+                <% elsif stage.gdd_threshold.present? %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                    <i class="fa-solid fa-fire mr-1 text-xs"></i>
+                    <%= number_with_delimiter(stage.gdd_threshold) %> GDD
+                  </span>
+                <% end %>
               </td>
               <td class="py-2 px-4 text-xs text-[#6B7280] max-w-xs truncate"><%= stage.description.presence || "—" %></td>
               <% if current_user.admin? %>
@@ -69,7 +82,7 @@
           <% end %>
           <% if @stages.empty? %>
             <tr>
-              <td colspan="6" class="py-12 px-6 text-center text-sm text-[#6B7280]">
+              <td colspan="5" class="py-12 px-6 text-center text-sm text-[#6B7280]">
                 <i class="fa-solid fa-seedling text-2xl text-gray-300 mb-3 block"></i>
                 No growth stages yet. <%= link_to "Add your first stage", new_growth_stage_path, class: "text-[#166534] font-medium hover:underline" %>.
               </td>
@@ -80,3 +93,20 @@
     </div>
   </div>
 </div>
+
+<script>
+  function showCrop(crop) {
+    document.querySelectorAll('.stage-row').forEach(function(row) {
+      row.style.display = row.dataset.crop === crop ? '' : 'none';
+    });
+    document.getElementById('tab-corn').className =
+      'px-4 py-1.5 text-sm font-medium transition ' +
+      (crop === 'corn' ? 'bg-[#166534] text-white' : 'bg-white text-gray-600 hover:bg-gray-50');
+    document.getElementById('tab-soybean').className =
+      'px-4 py-1.5 text-sm font-medium transition ' +
+      (crop === 'soybean' ? 'bg-[#166534] text-white' : 'bg-white text-gray-600 hover:bg-gray-50');
+    document.getElementById('threshold-header').textContent =
+      crop === 'soybean' ? 'Days from Planting' : 'GDD Threshold';
+  }
+  showCrop('corn');
+</script>

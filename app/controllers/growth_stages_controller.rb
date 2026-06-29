@@ -43,6 +43,6 @@ class GrowthStagesController < ApplicationController
   end
 
   def stage_params
-    params.require(:growth_stage).permit(:name, :gdd_threshold, :description, :position, :crop_type)
+    params.require(:growth_stage).permit(:name, :gdd_threshold, :days_threshold, :description, :position, :crop_type)
   end
 end

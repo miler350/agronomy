@@ -139,8 +139,13 @@
     <% bg, fg = status_colors[@gdd_result.status] || ["#f3f4f6","#6b7280"] %>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
-        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Accum. GDD</p>
-        <p class="text-2xl font-bold text-[#1F2937]"><%= number_with_delimiter(@gdd_result.cumulative_gdd.round) %></p>
+        <% if @gdd_result.uses_calendar_days %>
+          <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Days from Planting</p>
+          <p class="text-2xl font-bold text-[#1F2937]"><%= @gdd_result.days_from_planting %></p>
+        <% else %>
+          <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Accum. GDD</p>
+          <p class="text-2xl font-bold text-[#1F2937]"><%= number_with_delimiter(@gdd_result.cumulative_gdd.round) %></p>
+        <% end %>
       </div>
       <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">
         <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Current Stage</p>
@@ -150,7 +155,10 @@
         <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Next Stage</p>
         <p class="text-2xl font-bold text-[#1F2937]"><%= @gdd_result.next_stage&.name || "—" %></p>
         <% if @gdd_result.gdd_to_next > 0 %>
-          <p class="text-xs text-gray-400 mt-0.5"><%= @gdd_result.gdd_to_next.round %> GDD away</p>
+          <p class="text-xs text-gray-400 mt-0.5">
+            <%= @gdd_result.gdd_to_next.round %>
+            <%= @gdd_result.uses_calendar_days ? "days away" : "GDD away" %>
+          </p>
         <% end %>
       </div>
       <div class="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4">

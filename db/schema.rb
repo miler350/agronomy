@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -61,6 +61,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_000001) do
   create_table "growth_stages", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "crop_type", default: "corn", null: false
+    t.integer "days_threshold"
     t.text "description"
     t.decimal "gdd_threshold"
     t.string "name"
