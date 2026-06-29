@@ -64,7 +64,7 @@ class FieldsController < ApplicationController
   end
 
   def geojson_collection
-    static_path = Rails.root.join("public", "fields.geojson")
+    static_path = Rails.root.join("lib", "data", "fields.geojson")
     base = File.exist?(static_path) ? JSON.parse(File.read(static_path)) : { "type" => "FeatureCollection", "features" => [] }
 
     db_geometries = Field.where.not(geojson_polygon: [nil, ""]).each_with_object({}) do |f, h|
