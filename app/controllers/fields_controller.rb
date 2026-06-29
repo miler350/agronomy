@@ -76,6 +76,7 @@ class FieldsController < ApplicationController
       feature["geometry"] = db_geometries[fid] if db_geometries[fid]
     end
 
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     render json: base
   end
 
