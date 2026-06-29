@@ -67,15 +67,16 @@ class GddCalculator
 
   def calculate_soybean
     days = (Date.current - @event.planted_on).to_i
+    offset = soybean_day_offset
+    calibrated_days = days - offset
 
     stages        = GrowthStage.where.not(days_threshold: nil).where(crop_type: "soybean").order(:position)
-    current_stage = stages.select { |s| s.days_threshold <= days }.last
-    next_stage    = stages.find   { |s| s.days_threshold >  days }
+    current_stage = stages.select { |s| s.days_threshold <= calibrated_days }.last
+    next_stage    = stages.find   { |s| s.days_threshold >  calibrated_days }
 
-    days_to_next        = next_stage ? (next_stage.days_threshold - days) : 0
-    predicted_next_date = next_stage ? (@event.planted_on + next_stage.days_threshold) : nil
+    days_to_next        = next_stage ? (next_stage.days_threshold - calibrated_days) : 0
+    predicted_next_date = next_stage ? (Date.current + days_to_next) : nil
 
-    # Still accumulate raw GDD for informational display
     readings = WeatherReading
       .where(location: @location)
       .where("date >= ?", @event.planted_on)
@@ -90,10 +91,32 @@ class GddCalculator
       next_stage:          next_stage,
       gdd_to_next:         days_to_next,
       predicted_next_date: predicted_next_date,
-      status:              :on_track,
+      status:              soybean_determine_status(offset),
       uses_calendar_days:  true,
       days_from_planting:  days
     )
+  end
+
+  def soybean_day_offset
+    obs = @event.field_observations
+      .includes(:growth_stage)
+      .order(:observed_on)
+      .last
+    return 0 unless obs
+    return 0 unless obs.growth_stage&.days_threshold
+
+    actual_days = (obs.observed_on - @event.planted_on).to_i
+    actual_days - obs.growth_stage.days_threshold
+  end
+
+  def soybean_determine_status(offset)
+    if offset > 3
+      :delayed
+    elsif offset < -3
+      :ahead
+    else
+      :on_track
+    end
   end
 
   def daily_gdd(reading)
