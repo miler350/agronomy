@@ -24,12 +24,15 @@ class FieldObservationsController < ApplicationController
 
     observed_gdd = calculate_gdd_for_period(@field.location, @planting_event.planted_on, observed_on)
 
+    tag_ids = Array(params.dig(:field_observation, :tag_ids)).reject(&:blank?).map(&:to_i)
+
     @observation = @planting_event.field_observations.build(
       params.require(:field_observation).permit(:observed_on, :growth_stage_id, :notes)
     )
     @observation.observed_gdd = observed_gdd
 
     if @observation.save
+      @observation.tags = Tag.where(id: tag_ids)
       redirect_to field_path(@field), notice: "Observation logged (#{observed_gdd.round} GDD accumulated)."
     else
       redirect_to field_path(@field), alert: @observation.errors.full_messages.join(", ")
@@ -53,10 +56,13 @@ class FieldObservationsController < ApplicationController
 
     observed_gdd = calculate_gdd_for_period(@field.location, @planting_event.planted_on, observed_on)
 
+    tag_ids = Array(params.dig(:field_observation, :tag_ids)).reject(&:blank?).map(&:to_i)
+
     permitted = params.require(:field_observation).permit(:observed_on, :growth_stage_id, :notes)
     permitted[:observed_gdd] = observed_gdd
 
     if @observation.update(permitted)
+      @observation.tags = Tag.where(id: tag_ids)
       redirect_to field_path(@field), notice: "Observation updated."
     else
       redirect_to field_path(@field), alert: @observation.errors.full_messages.join(", ")

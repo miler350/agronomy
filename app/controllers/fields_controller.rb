@@ -11,8 +11,9 @@ class FieldsController < ApplicationController
     @current_planting_event = @field.planting_events.order(planted_on: :desc).first
     @gdd_result = GddCalculator.calculate(@current_planting_event) if @current_planting_event
     @growth_stages = GrowthStage.where.not(gdd_threshold: nil).order(:crop_type, :position)
+    @tags = Tag.order(:name)
     @observations = @current_planting_event&.field_observations
-      &.includes(:growth_stage)
+      &.includes(:growth_stage, :tags)
       &.order(observed_on: :desc) || []
 
     if @current_planting_event

@@ -40,6 +40,22 @@
                   style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;resize:none;"></textarea>
       </div>
 
+      <% if @tags.any? %>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:500;color:#4b5563;margin-bottom:6px;">Tags <span style="color:#9ca3af;font-weight:400;">(optional)</span></label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <% @tags.each do |tag| %>
+            <label class="dash-tag-pill" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;font-size:13px;cursor:pointer;background:white;color:#4b5563;">
+              <input type="checkbox" name="field_observation[tag_ids][]" value="<%= tag.id %>"
+                     class="dash-tag-checkbox" style="position:absolute;opacity:0;width:0;height:0;">
+              <%= tag.name %>
+            </label>
+          <% end %>
+        </div>
+        <input type="hidden" name="field_observation[tag_ids][]" value="">
+      </div>
+      <% end %>
+
       <p style="font-size:11px;color:#9ca3af;margin:-10px 0 16px;">GDD will be auto-calculated from planting date to the observed date using weather data.</p>
 
       <div style="display:flex;gap:10px;">
@@ -57,11 +73,30 @@
 </div>
 
 <script>
+  document.querySelectorAll('.dash-tag-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var label = cb.closest('label');
+      if (cb.checked) {
+        label.style.background = '#f0fdf4';
+        label.style.borderColor = '#86efac';
+        label.style.color = '#166534';
+      } else {
+        label.style.background = 'white';
+        label.style.borderColor = '#e5e7eb';
+        label.style.color = '#4b5563';
+      }
+    });
+  });
+
   function openObsDrawer(fieldId, fieldName) {
     document.getElementById('obs-field-name').textContent = fieldName;
     document.getElementById('obs-form').action = '/fields/' + fieldId + '/field_observations';
     document.getElementById('obs-date').value = '<%= Date.current %>';
     document.getElementById('obs-stage').value = '';
+    document.querySelectorAll('.dash-tag-checkbox').forEach(function(cb) {
+      cb.checked = false;
+      cb.closest('label').style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;font-size:13px;cursor:pointer;background:white;color:#4b5563;';
+    });
     var drawer = document.getElementById('obs-drawer');
     drawer.style.visibility = 'visible';
     setTimeout(function() {

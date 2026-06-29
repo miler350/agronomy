@@ -54,7 +54,7 @@
           <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm cursor-pointer <%= field.tags.include?(tag) ? 'bg-green-50 border-green-300 text-green-800' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300' %>">
             <input type="checkbox" name="field[tag_ids][]" value="<%= tag.id %>"
                    <%= 'checked' if field.tags.include?(tag) %>
-                   class="sr-only">
+                   class="sr-only tag-checkbox">
             <%= tag.name %>
           </label>
         <% end %>
@@ -107,5 +107,18 @@
       });
     };
     reader.readAsArrayBuffer(file);
+  });
+
+  document.querySelectorAll('.tag-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var label = cb.closest('label');
+      if (cb.checked) {
+        label.classList.remove('bg-white', 'border-gray-200', 'text-gray-600', 'hover:border-gray-300');
+        label.classList.add('bg-green-50', 'border-green-300', 'text-green-800');
+      } else {
+        label.classList.remove('bg-green-50', 'border-green-300', 'text-green-800');
+        label.classList.add('bg-white', 'border-gray-200', 'text-gray-600', 'hover:border-gray-300');
+      }
+    });
   });
 </script>

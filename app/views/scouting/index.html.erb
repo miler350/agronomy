@@ -17,6 +17,7 @@
               <th class="pb-3 pt-4 px-4 font-medium">Location</th>
               <th class="pb-3 pt-4 px-4 font-medium">Stage Observed</th>
               <th class="pb-3 pt-4 px-4 font-medium">GDD</th>
+              <th class="pb-3 pt-4 px-4 font-medium">Tags</th>
               <th class="pb-3 pt-4 px-4 font-medium">Notes</th>
             </tr>
           </thead>
@@ -44,6 +45,13 @@
                 </td>
                 <td class="py-3 px-4 text-xs text-[#6B7280] font-mono">
                   <%= number_with_delimiter(obs.observed_gdd.to_f.round) %>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex flex-wrap gap-1">
+                    <% obs.tags.each do |tag| %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-800"><%= tag.name %></span>
+                    <% end %>
+                  </div>
                 </td>
                 <td class="py-3 px-4 text-sm text-[#6B7280] max-w-sm whitespace-pre-wrap break-words">
                   <%= obs.notes.presence || "—" %>

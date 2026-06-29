@@ -71,6 +71,22 @@
                   class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] resize-none"></textarea>
       </div>
 
+      <% if @tags.any? %>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">Tags <span class="text-gray-400 font-normal">(optional)</span></label>
+        <div class="flex flex-wrap gap-2">
+          <% @tags.each do |tag| %>
+            <label class="obs-tag-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm cursor-pointer bg-white border-gray-200 text-gray-600 hover:border-gray-300">
+              <input type="checkbox" name="field_observation[tag_ids][]" value="<%= tag.id %>"
+                     class="sr-only obs-tag-checkbox">
+              <%= tag.name %>
+            </label>
+          <% end %>
+        </div>
+        <input type="hidden" name="field_observation[tag_ids][]" value="">
+      </div>
+      <% end %>
+
       <p class="text-xs text-gray-400">GDD is auto-calculated from planting date to observation date using weather data.</p>
 
       <div class="flex gap-3 pt-2">
@@ -179,6 +195,7 @@
               <th class="px-4 py-3 font-medium">Stage Observed</th>
               <th class="px-4 py-3 font-medium">GDD at Observation</th>
               <th class="px-4 py-3 font-medium">Notes</th>
+              <th class="px-4 py-3 font-medium">Tags</th>
               <th class="px-4 py-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
@@ -199,9 +216,16 @@
                 <td class="px-4 py-3 text-sm text-[#6B7280] max-w-xs whitespace-pre-wrap break-words">
                   <%= obs.notes.presence || "—" %>
                 </td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-1">
+                    <% obs.tags.each do |tag| %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-800"><%= tag.name %></span>
+                    <% end %>
+                  </div>
+                </td>
                 <td class="px-4 py-3 text-right flex items-center justify-end gap-3">
                   <% if current_user.admin? %>
-                  <button onclick="openEditDrawer(<%= obs.id %>, '<%= j obs.observed_on.strftime('%Y-%m-%d') %>', '<%= obs.growth_stage_id %>', '<%= j obs.notes.to_s %>')"
+                  <button onclick="openEditDrawer(<%= obs.id %>, '<%= j obs.observed_on.strftime('%Y-%m-%d') %>', '<%= obs.growth_stage_id %>', '<%= j obs.notes.to_s %>', <%= obs.tag_ids.to_json %>)"
                           class="text-xs text-blue-500 hover:text-blue-700 transition">
                     <i class="fa-solid fa-pencil"></i>
                   </button>
@@ -235,6 +259,33 @@
 
 <script>
   // ── Observation Drawer ───────────────────────────────────────────────────
+  function setObsTagCheckboxes(selectedIds) {
+    document.querySelectorAll('.obs-tag-checkbox').forEach(function(cb) {
+      cb.checked = (selectedIds || []).indexOf(parseInt(cb.value)) !== -1;
+      var label = cb.closest('label');
+      if (cb.checked) {
+        label.classList.remove('bg-white', 'border-gray-200', 'text-gray-600', 'hover:border-gray-300');
+        label.classList.add('bg-green-50', 'border-green-300', 'text-green-800');
+      } else {
+        label.classList.remove('bg-green-50', 'border-green-300', 'text-green-800');
+        label.classList.add('bg-white', 'border-gray-200', 'text-gray-600', 'hover:border-gray-300');
+      }
+    });
+  }
+
+  document.querySelectorAll('.obs-tag-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var label = cb.closest('label');
+      if (cb.checked) {
+        label.classList.remove('bg-white', 'border-gray-200', 'text-gray-600', 'hover:border-gray-300');
+        label.classList.add('bg-green-50', 'border-green-300', 'text-green-800');
+      } else {
+        label.classList.remove('bg-green-50', 'border-green-300', 'text-green-800');
+        label.classList.add('bg-white', 'border-gray-200', 'text-gray-600', 'hover:border-gray-300');
+      }
+    });
+  });
+
   function openDrawer() {
     document.getElementById('drawer-title').textContent = 'Log Observation';
     document.getElementById('obs-form').action = '<%= field_field_observations_path(@field) %>';
@@ -242,16 +293,18 @@
     document.getElementById('obs-date').value = '<%= Date.current %>';
     document.getElementById('stage-select').value = '';
     document.getElementById('obs-notes').value = '';
+    setObsTagCheckboxes([]);
     document.getElementById('obs-drawer').classList.add('open');
   }
 
-  function openEditDrawer(obsId, date, stageId, notes) {
+  function openEditDrawer(obsId, date, stageId, notes, tagIds) {
     document.getElementById('drawer-title').textContent = 'Edit Observation';
     document.getElementById('obs-form').action = '<%= field_field_observations_path(@field) %>/' + obsId;
     document.getElementById('obs-method').value = 'patch';
     document.getElementById('obs-date').value = date;
     document.getElementById('stage-select').value = stageId;
     document.getElementById('obs-notes').value = notes;
+    setObsTagCheckboxes(tagIds || []);
     document.getElementById('obs-drawer').classList.add('open');
   }
 

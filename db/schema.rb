@@ -10,9 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_24_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "field_observation_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "field_observation_id", null: false
+    t.bigint "tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["field_observation_id", "tag_id"], name: "idx_on_field_observation_id_tag_id_2b2985ad39", unique: true
+    t.index ["field_observation_id"], name: "index_field_observation_tags_on_field_observation_id"
+    t.index ["tag_id"], name: "index_field_observation_tags_on_tag_id"
+  end
 
   create_table "field_observations", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -139,6 +149,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_000003) do
     t.index ["location_id"], name: "index_weather_readings_on_location_id"
   end
 
+  add_foreign_key "field_observation_tags", "field_observations"
+  add_foreign_key "field_observation_tags", "tags"
   add_foreign_key "field_observations", "growth_stages"
   add_foreign_key "field_observations", "planting_events"
   add_foreign_key "field_tags", "fields"
