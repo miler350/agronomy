@@ -11,7 +11,7 @@ class DashboardController < ApplicationController
       end
 
     @last_synced   = WeatherReading.maximum(:updated_at)
-    @growth_stages = GrowthStage.where.not(gdd_threshold: nil).order(:crop_type, :position)
+    @growth_stages = GrowthStage.order(:crop_type, :position)
     @tags          = Tag.order(:name)
 
     @locations        = Location.order(:name)

@@ -24,12 +24,11 @@
         <select name="field_observation[growth_stage_id]" id="obs-stage"
                 style="width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-size:14px;box-sizing:border-box;font-family:inherit;background:white;">
           <option value="">— Select stage —</option>
-          <% @growth_stages.group_by(&:crop_type).each do |crop, stages| %>
-            <optgroup label="<%= crop.capitalize %>">
-              <% stages.each do |stage| %>
-                <option value="<%= stage.id %>"><%= stage.name %> (<%= stage.gdd_threshold.to_f.round %> GDD)</option>
-              <% end %>
-            </optgroup>
+          <% @growth_stages.each do |stage| %>
+            <option value="<%= stage.id %>" data-crop="<%= stage.crop_type %>">
+              <%= stage.name %>
+              (<%= stage.days_threshold ? "Day #{stage.days_threshold}" : "#{stage.gdd_threshold.to_f.round} GDD" %>)
+            </option>
           <% end %>
         </select>
       </div>
@@ -88,11 +87,15 @@
     });
   });
 
-  function openObsDrawer(fieldId, fieldName) {
+  function openObsDrawer(fieldId, fieldName, cropType) {
     document.getElementById('obs-field-name').textContent = fieldName;
     document.getElementById('obs-form').action = '/fields/' + fieldId + '/field_observations';
     document.getElementById('obs-date').value = '<%= Date.current %>';
-    document.getElementById('obs-stage').value = '';
+    var stageSelect = document.getElementById('obs-stage');
+    stageSelect.value = '';
+    stageSelect.querySelectorAll('option[data-crop]').forEach(function(opt) {
+      opt.hidden = cropType ? opt.dataset.crop !== cropType : false;
+    });
     document.querySelectorAll('.dash-tag-checkbox').forEach(function(cb) {
       cb.checked = false;
       cb.closest('label').style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;font-size:13px;cursor:pointer;background:white;color:#4b5563;';
@@ -444,7 +447,7 @@
                 </td>
                 <td class="py-2 pr-4 text-right">
                   <% if current_user.admin? %>
-                  <button onclick="openObsDrawer(<%= pe.field.id %>, '<%= j pe.field.name %>')"
+                  <button onclick="openObsDrawer(<%= pe.field.id %>, '<%= j pe.field.name %>', '<%= pe.crop_type %>')"
                           class="px-2.5 py-1 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap border border-green-200">
                     + Observation
                   </button>
