@@ -1,13 +1,15 @@
 class VisualCrossingSync
   BASE_URL = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
 
-  # Sync a single location for a date range. Defaults to today (picks up forecast days too).
-  def self.sync_location(location, from: Date.current, to: Date.current + 15)
+  # Sync a single location for a date range. Starts 2 days back so recently
+  # completed days get re-synced with actuals (the daily 4 AM UTC run would
+  # otherwise leave them as the forecast values stored the previous morning).
+  def self.sync_location(location, from: Date.current - 2, to: Date.current + 15)
     new(location).sync(from:, to:)
   end
 
   # Sync all locations for the same date range.
-  def self.sync_all(from: Date.current, to: Date.current + 15)
+  def self.sync_all(from: Date.current - 2, to: Date.current + 15)
     Location.find_each { |loc| sync_location(loc, from:, to:) }
   end
 
